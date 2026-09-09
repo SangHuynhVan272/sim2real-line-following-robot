@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com)
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="linefollowingrobot">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.0055775 0.00018288 0.030791"
+        rpy="0 0 0" />
+      <mass
+        value="0.12858" />
+      <inertia
+        ixx="0.0001856"
+        ixy="1.0483E-07"
+        ixz="-8.2161E-06"
+        iyy="0.0001532"
+        iyz="4.7258E-07"
+        izz="0.00027722" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://linefollowingrobot/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89412 0.89412 0.89412 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://linefollowingrobot/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="camera_font">
+    <inertial>
+      <origin
+        xyz="0.0011954 4.0301E-13 -0.00071418"
+        rpy="0 0 0" />
+      <mass
+        value="0.0002962" />
+      <inertia
+        ixx="3.2454E-09"
+        ixy="6.4136E-24"
+        ixz="-5.3673E-10"
+        iyy="2.347E-09"
+        iyz="4.3067E-24"
+        izz="2.6677E-09" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://linefollowingrobot/meshes/camera_font.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89412 0.89412 0.89412 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://linefollowingrobot/meshes/camera_font.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="camerafont"
+    type="fixed">
+    <origin
+      xyz="0.07269 0 0.023396"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="camera_font" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="wheel_left_font">
+    <inertial>
+      <origin
+        xyz="0.000108342695310348 -4.80206985287168E-11 -0.00106172480850342"
+        rpy="0 0 0" />
+      <mass
+        value="0.0225786132394003" />
+      <inertia
+        ixx="3.5425235000421E-06"
+        ixy="-1.42240494826482E-13"
+        ixz="3.48521214223839E-11"
+        iyy="3.5425158607798E-06"
+        iyz="7.38769206410904E-15"
+        izz="6.21641391755422E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://linefollowingrobot/meshes/wheel_left_font.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.894117647058823 0.894117647058823 0.894117647058823 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://linefollowingrobot/meshes/wheel_left_font.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="wheelleftfont"
+    type="continuous">
+    <origin
+      xyz="0.041782 0.0563 0.00505"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="wheel_left_font" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      effort="10"
+      velocity="10" />
+    <dynamics
+      damping="0.1"
+      friction="0.1" />
+  </joint>
+  <link
+    name="wheel_left_behind">
+    <inertial>
+      <origin
+        xyz="0.00010834 -1.0965E-11 -0.0010615"
+        rpy="0 0 0" />
+      <mass
+        value="0.022578" />
+      <inertia
+        ixx="3.5424E-06"
+        ixy="-7.2292E-14"
+        ixz="3.4816E-11"
+        iyy="3.5424E-06"
+        iyz="1.6831E-15"
+        izz="6.2162E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://linefollowingrobot/meshes/wheel_left_behind.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89412 0.89412 0.89412 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://linefollowingrobot/meshes/wheel_left_behind.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="wheelleftbehind"
+    type="continuous">
+    <origin
+      xyz="-0.040218 0.0563 0.00505"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="wheel_left_behind" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      effort="10"
+      velocity="10" />
+    <dynamics
+      damping="0.1"
+      friction="0.1" />
+  </joint>
+  <link
+    name="wheel_right_font">
+    <inertial>
+      <origin
+        xyz="-0.00010834 -2.5121E-11 0.0010615"
+        rpy="0 0 0" />
+      <mass
+        value="0.022578" />
+      <inertia
+        ixx="3.5424E-06"
+        ixy="1.2829E-13"
+        ixz="3.4853E-11"
+        iyy="3.5424E-06"
+        iyz="-3.8722E-15"
+        izz="6.2162E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://linefollowingrobot/meshes/wheel_right_font.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89412 0.89412 0.89412 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://linefollowingrobot/meshes/wheel_right_font.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="wheelrightfont"
+    type="continuous">
+    <origin
+      xyz="0.042099 -0.0563 0.00505"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="wheel_right_font" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      effort="10"
+      velocity="10" />
+    <dynamics
+      damping="0.1"
+      friction="0.1" />
+  </joint>
+  <link
+    name="wheel_right_behind">
+    <inertial>
+      <origin
+        xyz="-0.00010834 1.2352E-10 0.0010714"
+        rpy="0 0 0" />
+      <mass
+        value="0.022579" />
+      <inertia
+        ixx="3.5425E-06"
+        ixy="6.8585E-14"
+        ixz="3.4833E-11"
+        iyy="3.5425E-06"
+        iyz="-1.8891E-14"
+        izz="6.2164E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://linefollowingrobot/meshes/wheel_right_behind.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89412 0.89412 0.89412 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://linefollowingrobot/meshes/wheel_right_behind.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="wheelrightbehind"
+    type="continuous">
+    <origin
+      xyz="-0.039901 -0.0563 0.00505"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="wheel_right_behind" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      effort="10"
+      velocity="10" />
+    <dynamics
+      damping="0.1"
+      friction="0.1" />
+  </joint>
+</robot>

@@ -1,0 +1,34 @@
+{
+  "abi": [
+    "e_y",
+    "e_theta_rad",
+    "line_confidence",
+    "rpm_left",
+    "rpm_right",
+    "duty_prev_left",
+    "duty_prev_right"
+  ],
+  "action": [
+    "duty_left",
+    "duty_right"
+  ],
+  "activation": "elu",
+  "architecture": [
+    7,
+    64,
+    64,
+    2
+  ],
+  "blind_duty_scale": 0.0,
+  "config": "isaac_sim/config/default.json",
+  "config_sha256": "1de5e3edd16474df2497a07e9d6826933235f0da3cacd960e4c570d984a59a18",
+  "header": "line_following_policy.h",
+  "header_sha256": "60d7be4bb736ca1af98c4fadabfee046d6d4640e699c25b80cdcb94532dd425c",
+  "kind": "rl_mlp",
+  "onnx": "policy.onnx",
+  "onnx_sha256": "24107c11f51fe62b33bd8765dfe9f854858a83533414f38eaed55f88bb8053b6",
+  "parameter_count": 4802,
+  "vector_count": 512,
+  "vectors": "line_following_policy_vectors.csv",
+  "vectors_sha256": "7d682c9501cc5b5cbecb1792aaca6e65adf89abb38c260a787b5dc2703ccbc3d"
+}

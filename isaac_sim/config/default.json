@@ -1,0 +1,965 @@
+{
+  "physics": {
+    "dt_s": 0.0083333333,
+    "duration_s": null,
+    "minimum_duration_s": 20.0,
+    "timeout_multiplier": 4.0,
+    "maximum_duration_s": 180.0,
+    "solver": "TGS",
+    "enable_ccd": true,
+    "enable_stabilization": true,
+    "enable_gpu_dynamics": false,
+    "enhanced_determinism": false,
+    "policy_hz": 60,
+    "camera_hz": 30
+  },
+  "rl": {
+    "blind_duty_scale": 0.0,
+    "ppo": {
+      "init_noise_std": 0.1,
+      "gamma": 0.995,
+      "entropy_coef": 0.001,
+      "learning_rate": 0.0001,
+      "schedule": "adaptive",
+      "bc_anchor_weight": 0.1,
+      "bc_anchor_batch_size": 8192,
+      "bc_anchor_epochs": 1
+    },
+    "rewards": {
+      "progress_target_step": 1.0,
+      "progress_max_fraction": 4.0,
+      "lateral_error": 1.0,
+      "lateral_scale_m": 0.03,
+      "heading_error": 0.5,
+      "action_rate": 0.05,
+      "duty_excess": 0.25,
+      "time": 0.05,
+      "finish": 1000.0,
+      "failure": 1000.0
+    },
+    "terminations": {
+      "stall_timeout_s": 3.0,
+      "stall_progress_m": 0.005
+    },
+    "training": {
+      "start_progress_fraction": [
+        0.0,
+        0.9
+      ],
+      "full_route_start_probability": 0.6
+    }
+  },
+  "robot": {
+    "source_urdf": "linefollowingrobot_cad/urdf/linefollowingrobot.urdf",
+    "package_root": "linefollowingrobot_cad",
+    "usd_asset": "isaac_sim/assets/linefollowingrobot.usd",
+    "wheel_radius_m": 0.0225,
+    "track_width_m": 0.1126,
+    "base_height_m": 0.01745,
+    "total_mass_kg": 0.55,
+    "camera_mount_xyz_m": [
+      0.085,
+      0.0,
+      0.023396
+    ],
+    "camera_down_angle_deg": 27.5,
+    "camera_hfov_deg": 44.11,
+    "camera_resolution_px": [
+      320,
+      240
+    ],
+    "encoder_counts_per_wheel_rev": 1400,
+    "wheel_joints": [
+      "wheelleftfont",
+      "wheelleftbehind",
+      "wheelrightfont",
+      "wheelrightbehind"
+    ],
+    "encoder_joints": [
+      "wheelleftfont",
+      "wheelrightfont"
+    ],
+    "rear_diagnostic_joints": [
+      "wheelleftbehind",
+      "wheelrightbehind"
+    ],
+    "wheel_joint_velocity_signs": [
+      1.0,
+      1.0,
+      -1.0,
+      -1.0
+    ],
+    "wheel_drive": {
+      "damping": 0.0015,
+      "max_force_nm": 0.03,
+      "max_velocity_radps": 25.0
+    }
+  },
+  "track": {
+    "tape_width_m": 0.018,
+    "start_xy_m": [
+      -0.925,
+      -0.725
+    ],
+    "start_heading_deg": 0.0,
+    "points_xy_m": [
+      [
+        -0.925,
+        -0.725
+      ],
+      [
+        -0.905,
+        -0.725
+      ],
+      [
+        -0.885,
+        -0.725
+      ],
+      [
+        -0.865,
+        -0.725
+      ],
+      [
+        -0.845,
+        -0.725
+      ],
+      [
+        -0.825,
+        -0.725
+      ],
+      [
+        -0.805,
+        -0.725
+      ],
+      [
+        -0.785,
+        -0.725
+      ],
+      [
+        -0.765,
+        -0.725
+      ],
+      [
+        -0.745,
+        -0.725
+      ],
+      [
+        -0.725,
+        -0.725
+      ],
+      [
+        -0.705,
+        -0.725
+      ],
+      [
+        -0.685,
+        -0.725
+      ],
+      [
+        -0.665,
+        -0.725
+      ],
+      [
+        -0.645,
+        -0.725
+      ],
+      [
+        -0.625,
+        -0.725
+      ],
+      [
+        -0.6046,
+        -0.7247
+      ],
+      [
+        -0.5843,
+        -0.7238
+      ],
+      [
+        -0.564,
+        -0.7223
+      ],
+      [
+        -0.5437,
+        -0.7203
+      ],
+      [
+        -0.5235,
+        -0.7176
+      ],
+      [
+        -0.5034,
+        -0.7144
+      ],
+      [
+        -0.4834,
+        -0.7105
+      ],
+      [
+        -0.4636,
+        -0.7061
+      ],
+      [
+        -0.4438,
+        -0.7011
+      ],
+      [
+        -0.4242,
+        -0.6956
+      ],
+      [
+        -0.4048,
+        -0.6895
+      ],
+      [
+        -0.3856,
+        -0.6828
+      ],
+      [
+        -0.3666,
+        -0.6755
+      ],
+      [
+        -0.3477,
+        -0.6678
+      ],
+      [
+        -0.3292,
+        -0.6594
+      ],
+      [
+        -0.3108,
+        -0.6505
+      ],
+      [
+        -0.2928,
+        -0.6411
+      ],
+      [
+        -0.275,
+        -0.6312
+      ],
+      [
+        -0.2575,
+        -0.6208
+      ],
+      [
+        -0.2403,
+        -0.6098
+      ],
+      [
+        -0.2235,
+        -0.5984
+      ],
+      [
+        -0.207,
+        -0.5865
+      ],
+      [
+        -0.1908,
+        -0.5741
+      ],
+      [
+        -0.175,
+        -0.5612
+      ],
+      [
+        -0.1596,
+        -0.5479
+      ],
+      [
+        -0.1446,
+        -0.5342
+      ],
+      [
+        -0.13,
+        -0.52
+      ],
+      [
+        -0.1158,
+        -0.5054
+      ],
+      [
+        -0.1021,
+        -0.4904
+      ],
+      [
+        -0.0888,
+        -0.475
+      ],
+      [
+        -0.0759,
+        -0.4592
+      ],
+      [
+        -0.0635,
+        -0.443
+      ],
+      [
+        -0.0516,
+        -0.4265
+      ],
+      [
+        -0.0402,
+        -0.4097
+      ],
+      [
+        -0.0292,
+        -0.3925
+      ],
+      [
+        -0.0188,
+        -0.375
+      ],
+      [
+        -0.0089,
+        -0.3572
+      ],
+      [
+        0.0005,
+        -0.3392
+      ],
+      [
+        0.0094,
+        -0.3208
+      ],
+      [
+        0.0178,
+        -0.3023
+      ],
+      [
+        0.0255,
+        -0.2834
+      ],
+      [
+        0.0328,
+        -0.2644
+      ],
+      [
+        0.0395,
+        -0.2452
+      ],
+      [
+        0.0456,
+        -0.2258
+      ],
+      [
+        0.0511,
+        -0.2062
+      ],
+      [
+        0.0561,
+        -0.1864
+      ],
+      [
+        0.0605,
+        -0.1666
+      ],
+      [
+        0.0644,
+        -0.1466
+      ],
+      [
+        0.0676,
+        -0.1265
+      ],
+      [
+        0.0703,
+        -0.1063
+      ],
+      [
+        0.0723,
+        -0.086
+      ],
+      [
+        0.0738,
+        -0.0657
+      ],
+      [
+        0.0747,
+        -0.0454
+      ],
+      [
+        0.075,
+        -0.025
+      ],
+      [
+        0.075,
+        -0.005
+      ],
+      [
+        0.075,
+        0.015
+      ],
+      [
+        0.075,
+        0.035
+      ],
+      [
+        0.075,
+        0.055
+      ],
+      [
+        0.075,
+        0.075
+      ],
+      [
+        0.075,
+        0.095
+      ],
+      [
+        0.075,
+        0.115
+      ],
+      [
+        0.075,
+        0.135
+      ],
+      [
+        0.075,
+        0.155
+      ],
+      [
+        0.075,
+        0.175
+      ],
+      [
+        0.0754,
+        0.1951
+      ],
+      [
+        0.0765,
+        0.2151
+      ],
+      [
+        0.0783,
+        0.2352
+      ],
+      [
+        0.0809,
+        0.2551
+      ],
+      [
+        0.0841,
+        0.2749
+      ],
+      [
+        0.0882,
+        0.2946
+      ],
+      [
+        0.0929,
+        0.3141
+      ],
+      [
+        0.0983,
+        0.3335
+      ],
+      [
+        0.1045,
+        0.3526
+      ],
+      [
+        0.1113,
+        0.3715
+      ],
+      [
+        0.1188,
+        0.3901
+      ],
+      [
+        0.127,
+        0.4085
+      ],
+      [
+        0.1359,
+        0.4265
+      ],
+      [
+        0.1454,
+        0.4442
+      ],
+      [
+        0.1555,
+        0.4615
+      ],
+      [
+        0.1663,
+        0.4785
+      ],
+      [
+        0.1777,
+        0.495
+      ],
+      [
+        0.1897,
+        0.5111
+      ],
+      [
+        0.2022,
+        0.5268
+      ],
+      [
+        0.2154,
+        0.542
+      ],
+      [
+        0.2291,
+        0.5567
+      ],
+      [
+        0.2433,
+        0.5709
+      ],
+      [
+        0.258,
+        0.5846
+      ],
+      [
+        0.2732,
+        0.5978
+      ],
+      [
+        0.2889,
+        0.6103
+      ],
+      [
+        0.305,
+        0.6223
+      ],
+      [
+        0.3215,
+        0.6337
+      ],
+      [
+        0.3385,
+        0.6445
+      ],
+      [
+        0.3558,
+        0.6546
+      ],
+      [
+        0.3735,
+        0.6641
+      ],
+      [
+        0.3915,
+        0.673
+      ],
+      [
+        0.4099,
+        0.6812
+      ],
+      [
+        0.4285,
+        0.6887
+      ],
+      [
+        0.4474,
+        0.6955
+      ],
+      [
+        0.4665,
+        0.7017
+      ],
+      [
+        0.4859,
+        0.7071
+      ],
+      [
+        0.5054,
+        0.7118
+      ],
+      [
+        0.5251,
+        0.7159
+      ],
+      [
+        0.5449,
+        0.7191
+      ],
+      [
+        0.5648,
+        0.7217
+      ],
+      [
+        0.5849,
+        0.7235
+      ],
+      [
+        0.6049,
+        0.7246
+      ],
+      [
+        0.625,
+        0.725
+      ],
+      [
+        0.645,
+        0.725
+      ],
+      [
+        0.665,
+        0.725
+      ],
+      [
+        0.685,
+        0.725
+      ],
+      [
+        0.705,
+        0.725
+      ],
+      [
+        0.725,
+        0.725
+      ],
+      [
+        0.745,
+        0.725
+      ],
+      [
+        0.765,
+        0.725
+      ],
+      [
+        0.785,
+        0.725
+      ],
+      [
+        0.805,
+        0.725
+      ],
+      [
+        0.825,
+        0.725
+      ],
+      [
+        0.845,
+        0.725
+      ],
+      [
+        0.865,
+        0.725
+      ],
+      [
+        0.885,
+        0.725
+      ],
+      [
+        0.905,
+        0.725
+      ],
+      [
+        0.925,
+        0.725
+      ]
+    ],
+    "closed": false,
+    "finish_tape_extension_m": 0.2,
+    "floor_size_m": [
+      2.3,
+      2.1
+    ],
+    "layout": "cornering_s",
+    "corner_radii_m": [
+      0.7,
+      0.55
+    ]
+  },
+  "controller": {
+    "algorithm": "centerline_lookahead",
+    "target_speed_mps": 0.05,
+    "kp_lateral": 1.2,
+    "kp_heading": 0.35,
+    "max_yaw_rate_radps": 1.2,
+    "steering_sign": -1.0,
+    "minimum_confidence_speed_scale": 0.35
+  },
+  "vision": {
+    "threshold_mode": "adaptive_otsu",
+    "black_threshold": 80.0,
+    "adaptive_minimum_dark_fraction": 0.0005,
+    "adaptive_minimum_bright_fraction": 0.1,
+    "adaptive_minimum_contrast_px": 12.0,
+    "adaptive_threshold_min_px": 5.0,
+    "adaptive_threshold_max_px": 245.0,
+    "roi_rows_fraction": [
+      0.55,
+      0.4
+    ],
+    "centerline_rows_fraction": [
+      0.35,
+      0.4,
+      0.45,
+      0.5,
+      0.55,
+      0.6,
+      0.65,
+      0.7,
+      0.75,
+      0.8,
+      0.85,
+      0.9
+    ],
+    "minimum_centerline_points": 3,
+    "lookahead_row_fraction": 0.4,
+    "speed_slowdown_gain": 0.8,
+    "minimum_speed_mps": 0.025,
+    "minimum_run_width_px": 3,
+    "centerline_row_halfheight_px": 5,
+    "geometry_label_sensor_margin_px": 16.0,
+    "luma_weights": [
+      0.299,
+      0.587,
+      0.114
+    ]
+  },
+  "motor": {
+    "supply_voltage_v": 6.0,
+    "driver_drop_v": 2.24,
+    "measured_at_volts": 6.2,
+    "no_load_wheel_radps": 32.5,
+    "stall_torque_nm": 0.03,
+    "coulomb_friction_nm": 0.0015,
+    "viscous_friction_nm_per_radps": 5e-05,
+    "max_duty": 1.0,
+    "duty_rate_limit_per_s": 12.0,
+    "loaded_breakaway_duty": 0.55,
+    "scrub_breakaway_gain": 0.2,
+    "minimum_loaded_command_duty": 0.64,
+    "scrub_command_margin": 0.26,
+    "minimum_command_release_fraction": 0.5
+  },
+  "randomization": {
+    "camera_down_angle_deg": [
+      22.0,
+      33.0
+    ],
+    "camera_hfov_deg": [
+      42.5,
+      45.7
+    ],
+    "tape_width_m": [
+      0.017,
+      0.019
+    ],
+    "start_lateral_m": [
+      -0.01,
+      0.01
+    ],
+    "start_heading_deg": [
+      -3.0,
+      3.0
+    ],
+    "static_friction": [
+      0.65,
+      1.2
+    ],
+    "dynamic_friction": [
+      0.55,
+      1.0
+    ],
+    "wheel_radius_scale": [
+      0.98,
+      1.02
+    ],
+    "track_width_scale": [
+      0.98,
+      1.02
+    ],
+    "encoder_scale": [
+      0.97,
+      1.03
+    ],
+    "encoder_noise_rpm": [
+      0.5,
+      2.5
+    ],
+    "encoder_delay_ticks": 1,
+    "camera_delay_ticks": [
+      2,
+      3
+    ],
+    "tape_brightness": [
+      0.005,
+      0.06
+    ],
+    "dome_intensity": [
+      350.0,
+      700.0
+    ],
+    "key_intensity": [
+      800.0,
+      1600.0
+    ],
+    "supply_voltage_v": [
+      5.8,
+      6.1
+    ],
+    "driver_drop_v": [
+      1.8,
+      2.8
+    ],
+    "no_load_wheel_radps": [
+      29.0,
+      36.0
+    ],
+    "stall_torque_nm": [
+      0.024,
+      0.036
+    ],
+    "coulomb_friction_nm": [
+      0.0008,
+      0.003
+    ],
+    "loaded_breakaway_duty": [
+      0.5,
+      0.6
+    ],
+    "scrub_breakaway_gain": [
+      0.15,
+      0.28
+    ],
+    "motor_imbalance": [
+      0.9,
+      1.1
+    ],
+    "actuation_delay_ticks": [
+      1,
+      2
+    ],
+    "floor_luma": [
+      0.18,
+      0.95
+    ],
+    "floor_tint": [
+      0.75,
+      1.3
+    ],
+    "floor_roughness": [
+      0.4,
+      0.95
+    ],
+    "tape_roughness": [
+      0.25,
+      0.85
+    ],
+    "floor_dirt_patches": [
+      0,
+      60
+    ],
+    "floor_dirt_size_m": [
+      0.01,
+      0.055
+    ],
+    "floor_dirt_luma_scale": [
+      0.35,
+      1.45
+    ],
+    "lens_radial_k1": [
+      -0.04,
+      0.04
+    ],
+    "lens_radial_k2": [
+      -0.01,
+      0.01
+    ],
+    "lens_tangential_p1": [
+      -0.0025,
+      0.0025
+    ],
+    "lens_tangential_p2": [
+      -0.0025,
+      0.0025
+    ],
+    "motion_blur_mix": [
+      0.0,
+      0.22
+    ],
+    "jpeg_quality": [
+      65,
+      95
+    ],
+    "exposure_ev_bias": [
+      -0.25,
+      0.25
+    ],
+    "auto_gain_drift_ev": [
+      0.0,
+      0.22
+    ],
+    "auto_gain_drift_hz": [
+      0.005,
+      0.035
+    ],
+    "auto_gain_phase_rad": [
+      0.0,
+      6.283185307179586
+    ],
+    "rolling_shutter_fraction": [
+      0.0,
+      0.45
+    ],
+    "camera_mount_dx_m": [
+      -0.005,
+      0.005
+    ],
+    "camera_mount_dy_m": [
+      -0.005,
+      0.005
+    ],
+    "camera_mount_dz_m": [
+      -0.005,
+      0.005
+    ],
+    "camera_yaw_deg": [
+      -4.0,
+      4.0
+    ],
+    "camera_roll_deg": [
+      -4.0,
+      4.0
+    ],
+    "base_mass_scale": [
+      0.9,
+      1.1
+    ],
+    "viscous_friction_nm_per_radps": [
+      3e-05,
+      9e-05
+    ],
+    "supply_sag_fraction": [
+      0.0,
+      0.04
+    ],
+    "base_com_offset_m": [
+      -0.006,
+      0.006
+    ]
+  },
+  "evaluation": {
+    "seeds": 20,
+    "completion_tolerance_m": 0.03,
+    "max_line_loss_s": 0.5,
+    "max_roll_pitch_deg": 20.0,
+    "tuning": {
+      "target_speed_mps": [
+        0.04,
+        0.05,
+        0.06
+      ],
+      "kp_lateral": [
+        0.9,
+        1.2,
+        1.6
+      ],
+      "kp_heading": [
+        0.25,
+        0.35,
+        0.5
+      ]
+    }
+  }
+}

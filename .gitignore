@@ -1,0 +1,48 @@
+# Local Python and editor state
+__pycache__/
+*.py[cod]
+.venv/
+.vscode/
+.idea/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+
+# Isaac Sim / training output
+isaac_sim/assets/
+isaac_sim/output/
+logs/
+runs/
+*.pt
+*.pth
+*.onnx
+
+# Generated simulation/debug evidence
+*.usd
+*.usda
+*.usdc
+*.csv
+*.mp4
+*.log
+
+# Platform build output
+firmware/policies/
+.pio/
+build/
+
+# OS files and local secrets
+.DS_Store
+Thumbs.db
+.env
+.env.*
+*.pem
+*.key
+
+# The learner's exported firmware policy is local output. Keep only its guide.
+firmware/generated/*
+!firmware/generated/README.md
+
+# The small public actor is an optional, reproducible reference fixture.
+!firmware/reference/line_following_policy_vectors.csv

@@ -1,0 +1,19 @@
+name: quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  source-and-artifact-checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install lightweight policy-check dependency
+        run: python -m pip install numpy==1.26.0
+      - name: Run repository checks
+        run: python tools/project.py source-check

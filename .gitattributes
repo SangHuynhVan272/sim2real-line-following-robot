@@ -1,0 +1,14 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.ino text eol=lf
+*.h text eol=lf
+*.cpp text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.STL binary
+*.stl binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
