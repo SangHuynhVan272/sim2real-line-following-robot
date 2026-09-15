@@ -2,13 +2,6 @@
 <!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com)
      Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
-<!-- Do not import this file directly in Isaac Sim, RViz or any other generic
-     URDF viewer: the mesh filenames below use the ROS "package://" convention,
-     which only resolves inside a ROS workspace. This repository has no ROS
-     package for "linefollowingrobot", so run
-     isaac_sim/scripts/import_robot.py (see README.md) instead, which
-     rewrites these paths to real file locations before import. See
-     isaac_sim/scripts/prepare_urdf.py. -->
 <robot
   name="linefollowingrobot">
   <link
