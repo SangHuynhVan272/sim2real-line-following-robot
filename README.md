@@ -204,8 +204,7 @@ If you downloaded a ZIP instead, extract it as
 activate `env_isaaclab`, and run the same `doctor` command.
 
 Continue only when there is no `[FAIL]` and the last line says
-`Environment check PASS`. A `[SKIP]` for the optional desktop C++ compiler is
-normal. Fix the first `[FAIL]`, reopen Anaconda Prompt and try again.
+`Environment check PASS`. A `[SKIP]` for an optional check is normal. Fix the first `[FAIL]`, reopen Anaconda Prompt and try again.
 
 ## 4. Install on Ubuntu 22.04 or 24.04
 
@@ -291,13 +290,11 @@ A black Isaac Sim viewport should open. Stop it with `Ctrl+C`.
 
 ### 4.5 Download this project
 
-On this project's GitHub page, click **Code**, select **HTTPS**, and copy the
-repository URL. The first command below asks you to paste it:
+Run the following commands to download the project:
 
 ```bash
 cd "$HOME/robotics"
-read -r -p "Paste the repository HTTPS URL, then press Enter: " REPO_URL
-git clone "$REPO_URL" line-following-robot-pai
+git clone https://github.com/SangHuynhVan272/sim2real-line-following-robot.git line-following-robot-pai
 cd line-following-robot-pai
 python tools/project.py doctor
 ```
