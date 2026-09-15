@@ -41,6 +41,13 @@ There is no wheel-speed PID in the simulator or firmware.
 | `tools/project.py`                  | One command runner for Windows and Ubuntu                    |
 | `docs/TRAINING.md`                  | Complete retraining and export procedure                     |
 
+The URDF in `linefollowingrobot_cad/` uses ROS-style `package://` mesh paths,
+which only resolve inside a ROS workspace. Do not open it directly in Isaac
+Sim, RViz or any other generic URDF viewer/importer; it will warn or fail to
+find the mesh files. Always load the robot through
+`python tools/project.py import-robot` (section 5.2 below), which rewrites
+those paths to real file locations before import.
+
 This repository teaches you to produce and deploy **your own policy**. Training
 checkpoints (`.pt`), ONNX exports and the active files in `firmware/generated/`
 are local outputs and are not committed to Git. After training, the exporter
