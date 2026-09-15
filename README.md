@@ -192,13 +192,9 @@ the tutorial.
 
 ### 3.5 Download this project
 
-On this project's GitHub page, click **Code**, select **HTTPS**, and copy the
-repository URL. The first command below asks you to paste it:
-
 ```bat
 cd /d C:\robotics
-set /p REPO_URL=Paste the repository HTTPS URL, then press Enter:
-git clone "%REPO_URL%" line-following-robot-pai
+git clone https://github.com/SangHuynhVan272/sim2real-line-following-robot.git line-following-robot-pai
 cd line-following-robot-pai
 python tools\project.py doctor
 ```
