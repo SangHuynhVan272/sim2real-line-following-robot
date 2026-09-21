@@ -38,7 +38,7 @@ There is no wheel-speed PID in the simulator or firmware.
 | `firmware/generated/`               | Local output for the learner's exported policy; ignored by Git |
 | `firmware/reference/`               | Optional example actor and golden vectors; never selected automatically |
 | `firmware/tests/`                   | Two small host checks for perception and policy parity       |
-| `tools/project.py`                  | One command runner for Windows and Ubuntu                    |
+| `tools/project.py`                  | Project command runner and environment checks                |
 | `docs/TRAINING.md`                  | Complete retraining and export procedure                     |
 
 This repository teaches you to produce and deploy **your own policy**. Training
@@ -56,15 +56,20 @@ policy until the learner completes the export step.
 Simulation PASS is not a Real Robot PASS claim. Every physical robot still
 needs camera, encoder and motor-direction checks before autonomous driving.
 
-## 2. Supported computers
+## 2. Validated platform
 
-Use an Intel/AMD 64-bit PC meeting NVIDIA's minimum specification:
+This project is developed and validated on Ubuntu 24.04 LTS (x86-64).
+Use a PC meeting NVIDIA's minimum specification:
 
-- Windows 11, Ubuntu 22.04 LTS or Ubuntu 24.04 LTS;
+- Ubuntu 24.04 LTS;
 - at least 4 CPU cores, 32 GB RAM and 50 GB free SSD space;
 - an NVIDIA RTX GPU with 16 GB VRAM or more;
-- NVIDIA driver 580.88 or newer on Windows, or 580.65.06 or newer on Linux;
+- NVIDIA driver 580.65.06 or newer;
 - a stable internet connection for the first Isaac Sim launch.
+
+Windows, WSL, macOS and Ubuntu 22.04 have not been validated for this
+repository. They may work, but they are outside the currently supported and
+tested workflow.
 
 NVIDIA publishes the current GPU, VRAM and driver requirements in the
 [Isaac Sim 5.1 requirements](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/installation/requirements.html).
@@ -95,120 +100,9 @@ validated.
 Do not use the current Isaac Lab `main` branch or Python 3.12. Those versions
 use different APIs and will produce import or RSL-RL configuration errors.
 
-## 3. Install on Windows 11
+## 3. Install on Ubuntu 24.04 LTS
 
-Use a short directory such as `C:\robotics`. Avoid OneDrive, Desktop, spaces
-and non-ASCII characters in the project path. Isaac Sim contains deeply nested
-packages, so a short path prevents Windows path-length failures.
-
-### 3.1 Install Git and Miniconda
-
-Open **PowerShell as Administrator**. Enable Windows long paths first:
-
-```powershell
-New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
-```
-
-Restart Windows. Then open a normal PowerShell and install Git and Miniconda:
-
-```powershell
-winget install -e --id Git.Git
-winget install -e --id Anaconda.Miniconda3
-```
-
-If `winget` is unavailable, install
-[Git for Windows](https://git-scm.com/download/win) and
-[Miniconda](https://docs.conda.io/projects/miniconda/en/latest/) manually.
-If the Windows user-profile path contains spaces or non-ASCII characters,
-install Miniconda manually at `C:\Miniconda3`.
-
-Close PowerShell after installation. Open **Anaconda Prompt (Miniconda3)** and
-verify:
-
-```bat
-git --version
-conda --version
-nvidia-smi
-git config --global core.longpaths true
-if not exist C:\robotics mkdir C:\robotics
-cd /d C:\robotics
-```
-
-### 3.2 Create the Python environment
-
-Run all remaining Windows commands in the same Anaconda Prompt:
-
-```bat
-conda create -n env_isaaclab python=3.11 -y
-conda activate env_isaaclab
-python -m pip install --upgrade pip
-```
-
-The prompt must begin with `(env_isaaclab)`. If it does not, stop and activate
-the environment again.
-
-### 3.3 Install Isaac Sim and PyTorch
-
-```bat
-python -m pip install "isaacsim[all,extscache]==5.1.0" --extra-index-url https://pypi.nvidia.com
-python -m pip install --upgrade --force-reinstall torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu128
-```
-
-Start Isaac Sim once:
-
-```bat
-isaacsim
-```
-
-Accept the NVIDIA EULA when prompted. The first launch downloads extensions
-and builds caches, so it can take more than ten minutes. Close Isaac Sim after
-the empty application window opens successfully.
-
-### 3.4 Install Isaac Lab
-
-```bat
-cd /d C:\robotics
-git clone https://github.com/isaac-sim/IsaacLab.git
-cd IsaacLab
-git checkout v2.3.2
-isaaclab.bat --install rsl_rl
-```
-
-Re-apply the project package versions after the Isaac Lab installer finishes:
-
-```bat
-python -m pip install --upgrade --force-reinstall torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu128
-python -m pip install numpy==1.26.0 onnx==1.20.1 pillow==11.3.0 click==8.1.7 psutil==5.9.8 typing_extensions==4.12.2
-```
-
-Verify Isaac Lab from `C:\robotics\IsaacLab`:
-
-```bat
-isaaclab.bat -p scripts\tutorials\00_sim\create_empty.py
-```
-
-A black Isaac Sim viewport should open. On Windows, use `Ctrl+Break` to stop
-the tutorial.
-
-### 3.5 Download this project
-
-```bat
-cd /d C:\robotics
-git clone https://github.com/SangHuynhVan272/sim2real-line-following-robot.git line-following-robot-pai
-cd line-following-robot-pai
-python tools\project.py doctor
-```
-
-If you downloaded a ZIP instead, extract it as
-`C:\robotics\line-following-robot-pai`, open Anaconda Prompt in that directory,
-activate `env_isaaclab`, and run the same `doctor` command.
-
-Continue only when there is no `[FAIL]` and the last line says
-`Environment check PASS`. A `[SKIP]` for an optional check is normal. Fix the first `[FAIL]`, reopen Anaconda Prompt and try again.
-
-## 4. Install on Ubuntu 22.04 or 24.04
-
-### 4.1 Install system tools and Miniconda
+### 3.1 Install system tools and Miniconda
 
 Open Terminal:
 
@@ -230,14 +124,14 @@ conda --version
 nvidia-smi
 ```
 
-Isaac Sim pip packages require GLIBC 2.35 or newer. Ubuntu 22.04 and 24.04 meet
-that requirement; confirm with:
+Isaac Sim pip packages require GLIBC 2.35 or newer. Ubuntu 24.04 meets that
+requirement; confirm with:
 
 ```bash
 ldd --version
 ```
 
-### 4.2 Create the Python environment
+### 3.2 Create the Python environment
 
 ```bash
 conda create -n env_isaaclab python=3.11 -y
@@ -247,7 +141,7 @@ python -m pip install --upgrade pip
 
 The prompt must begin with `(env_isaaclab)`.
 
-### 4.3 Install Isaac Sim and PyTorch
+### 3.3 Install Isaac Sim and PyTorch
 
 ```bash
 python -m pip install "isaacsim[all,extscache]==5.1.0" --extra-index-url https://pypi.nvidia.com
@@ -263,7 +157,7 @@ isaacsim
 Wait for the first extension download and cache build to finish, then close
 Isaac Sim.
 
-### 4.4 Install Isaac Lab
+### 3.4 Install Isaac Lab
 
 ```bash
 cd "$HOME/robotics"
@@ -288,7 +182,7 @@ Verify Isaac Lab from `$HOME/robotics/IsaacLab`:
 
 A black Isaac Sim viewport should open. Stop it with `Ctrl+C`.
 
-### 4.5 Download this project
+### 3.5 Download this project
 
 Run the following commands to download the project:
 
@@ -306,7 +200,7 @@ directory and run the same `doctor` command.
 Continue only when there is no `[FAIL]` and the last line says
 `Environment check PASS`. A `[SKIP]` for an optional check is normal.
 
-## 5. Commands used on both Windows and Ubuntu
+## 4. Run the project on Ubuntu
 
 Every time you open a new terminal:
 
@@ -319,18 +213,16 @@ Every time you open a new terminal:
 The project runner finds the repository from its own file location, so its
 paths do not depend on your username or installation directory.
 
-### 5.1 Check the downloaded source
+### 4.1 Check the downloaded source
 
 ```bash
 python tools/project.py source-check
 ```
 
-On Ubuntu this also compiles and runs the C++ policy/perception tests when
-`g++` is installed. Windows users may use
-`python tools/project.py source-check --skip-cpp`; firmware compilation is
-checked separately in Arduino IDE.
+This also compiles and runs the C++ policy/perception tests when `g++` is
+installed. Firmware compilation is checked separately in Arduino IDE.
 
-### 5.2 Import the robot and compare both simulation implementations
+### 4.2 Import the robot and compare both simulation implementations
 
 ```bash
 python tools/project.py import-robot
@@ -341,7 +233,7 @@ python tools/project.py parity
 `parity` compares 1,500 samples between the rendered and vectorized lanes and
 must end with `PARITY OK`.
 
-### 5.3 Run the first camera simulation
+### 4.3 Run the first camera simulation
 
 ```bash
 python tools/project.py smoke
@@ -351,7 +243,7 @@ python tools/project.py smoke
 baseline. This checks the camera, perception, physics and motor model before
 training.
 
-### 5.4 Optional reference-policy check
+### 4.4 Optional reference-policy check
 
 ```bash
 python tools/project.py reference-smoke
@@ -382,7 +274,7 @@ python tools/project.py gui
 Use `RobotCamera` for the perception image and `TeachingOverviewCamera` for
 the whole track.
 
-## 6. Train and export your policy
+## 5. Train and export your policy
 
 Training is the main project activity. The reference actor is not used by these
 commands:
@@ -408,9 +300,9 @@ Read [`docs/TRAINING.md`](docs/TRAINING.md) before running these commands; it
 defines checkpoint selection, the untouched holdout rule and the full
 post-export validation.
 
-## 7. Build and flash the ESP32-S3
+## 6. Build and flash the ESP32-S3
 
-Complete Section 6 first. Confirm that your export created
+Complete Section 5 first. Confirm that your export created
 `firmware/generated/line_following_policy.h`; the firmware deliberately refuses
 to compile without a learner-generated header. Then:
 
@@ -454,18 +346,16 @@ For the first motor test, disconnect motor power or physically restrain the
 robot. Confirm camera direction, encoder sign, all four motor directions,
 line-loss stop and stall protection before placing it on the floor.
 
-## 8. Troubleshooting
+## 7. Troubleshooting
 
 | Symptom | Cause and fix |
 |---|---|
 | `python` points outside `env_isaaclab` | Run `conda activate env_isaaclab`, then rerun `python tools/project.py doctor` |
 | Python is 3.10 or 3.12 | Recreate the conda environment with Python 3.11 |
 | `isaacsim` is not recognized | The conda environment is inactive or Isaac Sim installation failed |
-| `ModuleNotFoundError: isaaclab` | From Isaac Lab v2.3.2, rerun `isaaclab.bat --install rsl_rl` or `./isaaclab.sh --install rsl_rl` |
+| `ModuleNotFoundError: isaaclab` | From Isaac Lab v2.3.2, rerun `./isaaclab.sh --install rsl_rl` |
 | RSL-RL reports `class_name`, `actor` or `critic` | Checkout Isaac Lab v2.3.2 and reinstall `rsl_rl` |
 | `torch.cuda.is_available()` is false | Repair the NVIDIA driver, then reinstall the cu128 PyTorch command |
-| Windows path is too long | Enable both long-path settings and keep both repositories under `C:\robotics` |
-| Project is under OneDrive or a path with spaces | Move it to `C:\robotics\line-following-robot-pai` |
 | First Isaac Sim launch appears frozen | Wait while extensions and shaders download; this can exceed ten minutes |
 | Kit prints `Failed to create change watch ... No space left on device` although disk space is available | Close applications that consume many file watches; on Linux, increase the per-user inotify watch limit, then restart Isaac Sim |
 | Robot USD is missing | Run `python tools/project.py import-robot` before smoke/gui |
@@ -484,7 +374,7 @@ python tools/project.py source-check --skip-cpp
 Also include the operating system, GPU model, NVIDIA driver version and the
 first error line. Do not send the entire Isaac Sim log unless requested.
 
-## 9. License
+## 8. License
 
 The original project source, documentation, CAD and generated policy artifacts
 are released under the [BSD 3-Clause License](LICENSE). Third-party frameworks,
