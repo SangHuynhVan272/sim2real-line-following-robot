@@ -68,15 +68,34 @@ post-tanh fit; that previously produced saturated actors.
 python tools/project.py train-ppo --bc-run isaac_sim/output/rl/bc_candidate --output-dir isaac_sim/output/rl/ppo_candidate --iterations 600
 ```
 
-The command uses seed 0 and a BC anchor weight of `0.2`. Choose one
-checkpoint from training metrics before opening the rendered evaluation set.
-Do not search for a checkpoint by repeatedly trying evaluation seeds.
+The command uses seed 0 and a BC anchor weight of `0.2`.
+
+For the simplest teaching workflow, use the latest saved checkpoint. It is the
+default tutorial choice, not a claim that the final iteration is always the
+best model.
+
+Optionally, compare all saved PPO checkpoints on validation seeds 0-19:
+
+```bash
+python tools/project.py select-checkpoint
+```
+
+The selector chooses the checkpoint with the highest validation score. Ties are
+resolved by preferring nominal PASS and then the later iteration. It writes the
+chosen path to:
+
+```text
+isaac_sim/output/checkpoint_selection/SELECTED_CHECKPOINT.txt
+```
+
+This is intentionally optional because it may require many rendered-camera
+episodes and can take substantially longer than evaluating one checkpoint.
 
 ## 5. Evaluate the selected checkpoint
 
 `<N>` is the checkpoint iteration you selected. You may use the latest saved
-checkpoint for a simple teaching workflow, or choose another checkpoint from
-training metrics.
+checkpoint for the simple teaching workflow, or the result of
+`select-checkpoint` when you want the strongest saved validation score.
 
 For checkpoint comparison, use seeds 0-19 as the validation set. It is
 legitimate to compare checkpoints on this set. Higher completion scores are
