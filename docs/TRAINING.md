@@ -141,13 +141,8 @@ deploys the same header, manifest and vectors to `firmware/generated/`, which
 is the directory compiled by the sketch. Never edit generated weights by hand.
 
 `deployed-smoke` loads the arrays back from `firmware/generated/`, checks their
-fingerprints and runs nominal plus randomized camera episodes. Before flashing
-a final result, repeat the full rendered sets against the exported header:
-
-```bash
-python tools/project.py deployed-gate
-python tools/project.py deployed-holdout
-```
+fingerprints and runs nominal plus randomized camera episodes before flashing
+the firmware.
 
 The `.pt`, `.onnx`, versioned `firmware/policies/` export and active
 `firmware/generated/` files remain local and are not committed to Git. Record
