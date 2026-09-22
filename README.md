@@ -14,12 +14,8 @@ starting point, you will create:
 | `policy.onnx` | Intermediate model used for firmware export |
 | `line_following_policy.h` | C policy compiled into the ESP32-S3 firmware |
 
-The complete workflow is:
-
-```text
-install -> validate simulation -> train BC -> train PPO
--> test 40 scenarios -> export policy -> Arduino Upload -> run the robot
-```
+The complete workflow is **install → validate simulation → train BC → train PPO
+→ evaluate 40 scenarios → export policy → Arduino Upload → run the robot**.
 
 ## 1. Before you begin
 
@@ -63,15 +59,11 @@ so that the project uses a reproducible version that can be tested consistently.
 
 For a new installation, the recommended directory layout is:
 
-```text
-$HOME/
-├── IsaacLab/                         # NVIDIA Isaac Lab source
-├── robotics/
-│   └── line-following-robot-pai/     # this project
-└── miniconda3/
-    └── envs/
-        └── env_isaaclab/             # Python environment
-```
+| Path | Purpose |
+|---|---|
+| `$HOME/IsaacLab/` | NVIDIA Isaac Lab source |
+| `$HOME/robotics/line-following-robot-pai/` | This project |
+| `$HOME/miniconda3/envs/env_isaaclab/` | Python environment |
 
 The Conda environment, the IsaacLab source repository, and this project are
 three separate things. Activating `env_isaaclab` does not change your current
@@ -98,6 +90,11 @@ Windows, WSL, and macOS have not been validated.
 4. Do not copy a leading `$` from examples found elsewhere.
 5. Stop if you see `[FAIL]`, `Error`, or `Traceback`, or if the command never
    returns to the terminal prompt. Do not continue by ignoring an error.
+
+> [!NOTE]
+> Copyable code blocks in this README are reserved for commands you can paste
+> into Terminal. Expected output, status messages, file paths, and examples are
+> shown as normal text or notes so they are not mistaken for commands.
 
 Check the GPU and GLIBC first:
 
@@ -141,11 +138,7 @@ conda activate env_isaaclab
 python -m pip install --upgrade pip
 ```
 
-After `conda activate`, the terminal prompt must begin with:
-
-```text
-(env_isaaclab)
-```
+After `conda activate`, the terminal prompt must begin with **`(env_isaaclab)`**.
 
 ## 4. Install and verify Isaac Sim 5.1
 
@@ -211,10 +204,8 @@ cd line-following-robot-pai
 
 The intended layout is therefore:
 
-```text
-$HOME/IsaacLab                       # NVIDIA framework, for a new installation
-$HOME/robotics/line-following-robot-pai  # this project
-```
+- `$HOME/IsaacLab/` — NVIDIA framework for a new installation.
+- `$HOME/robotics/line-following-robot-pai/` — this project.
 
 If you already had Isaac Lab in another directory, leave it there. Only the
 robot project is placed under `$HOME/robotics`.
@@ -282,14 +273,10 @@ cd "$HOME/robotics/line-following-robot-pai"
 python tools/project.py doctor
 ```
 
-Continue only when the final line is:
-
-```text
-Environment check PASS. This terminal is ready for the project commands.
-```
-
-An optional `[SKIP]` is normal. A `[FAIL]` is not normal and must be fixed
-before you continue.
+> [!IMPORTANT]
+> Continue only when the final line says **`Environment check PASS. This terminal
+> is ready for the project commands.`** An optional `[SKIP]` is normal. A
+> `[FAIL]` is not normal and must be fixed before you continue.
 
 ## 7. Validate the source and simulation
 
@@ -299,11 +286,8 @@ Check the downloaded project files:
 python tools/project.py source-check
 ```
 
-The output must include:
-
-```text
-[PASS] Repository files, JSON, Markdown links and Python syntax
-```
+> [!NOTE]
+> Expected result: **`[PASS] Repository files, JSON, Markdown links and Python syntax`**
 
 Generate the robot USD and compare the two simulation implementations:
 
@@ -312,11 +296,8 @@ python tools/project.py import-robot
 python tools/project.py parity
 ```
 
-The `parity` command must end with:
-
-```text
-PARITY OK
-```
+> [!NOTE]
+> The `parity` command should end with **`PARITY OK`**.
 
 Run two camera episodes before training:
 
@@ -347,12 +328,8 @@ and PPO then improves the policy in randomized environments.
 python tools/project.py train-bc --output-dir isaac_sim/output/rl/bc_candidate
 ```
 
-Do not close Terminal while this command is running. When it finishes, the
-following file must exist:
-
-```text
-isaac_sim/output/rl/bc_candidate/model_bc.pt
-```
+Do not close Terminal while this command is running. When it finishes,
+`isaac_sim/output/rl/bc_candidate/model_bc.pt` must exist.
 
 Check it with:
 
@@ -368,11 +345,8 @@ Continue only when `BC MODEL OK` is printed.
 python tools/project.py train-ppo --bc-run isaac_sim/output/rl/bc_candidate --output-dir isaac_sim/output/rl/ppo_candidate --iterations 600
 ```
 
-Training is complete when Terminal prints:
-
-```text
-training complete; checkpoints in ...
-```
+> [!NOTE]
+> Training is complete when Terminal prints **`training complete; checkpoints in ...`**.
 
 For the normal teaching workflow, **do not hard-code a checkpoint filename**.
 You do not need to know whether the last model is `model_599.pt`,
@@ -415,11 +389,8 @@ Now evaluate it on validation seeds 0 through 19:
 python tools/project.py gate --checkpoint "$CHECKPOINT"
 ```
 
-A typical result is:
-
-```text
-Evaluation score: 19/20 randomized scenarios passed; nominal=PASS
-```
+> [!NOTE]
+> Example result: **`Evaluation score: 19/20 randomized scenarios passed; nominal=PASS`**
 
 Higher is better. `20/20` is the best possible score on this 20-scenario set,
 `19/20` is stronger than `18/20`, and so on. A score below `20/20` means
@@ -433,11 +404,8 @@ CHECKPOINT="$(python tools/project.py checkpoint-path)"
 python tools/project.py holdout --checkpoint "$CHECKPOINT"
 ```
 
-The holdout is reported in the same form:
-
-```text
-Evaluation score: 20/20 randomized scenarios passed; nominal=PASS
-```
+> [!NOTE]
+> Example holdout result: **`Evaluation score: 20/20 randomized scenarios passed; nominal=PASS`**
 
 Record both scores with the checkpoint you selected. You may continue to Step
 10 regardless of whether either score is 20/20. If you want a stronger model,
@@ -478,11 +446,7 @@ test -f firmware/generated/line_following_policy.h && echo "FIRMWARE POLICY OK"
 Continue only when `FIRMWARE POLICY OK` is printed.
 
 Do not copy the `.pt` or `.onnx` file into Arduino. Arduino uses only the C
-header generated at:
-
-```text
-firmware/generated/line_following_policy.h
-```
+header generated at `firmware/generated/line_following_policy.h`.
 
 ## 11. Test the exact policy that will be uploaded
 
@@ -504,11 +468,9 @@ python tools/project.py deployed-gate
 python tools/project.py deployed-holdout
 ```
 
-Each command prints an evaluation score such as:
-
-```text
-Evaluation score: 19/20 randomized scenarios passed; nominal=PASS
-```
+> [!NOTE]
+> Each command prints an evaluation score, for example:
+> **`Evaluation score: 19/20 randomized scenarios passed; nominal=PASS`**
 
 Compare these scores with the original `.pt` checkpoint. Ideally the exported
 C policy should reproduce similar behavior. A lower score does not by itself
@@ -522,11 +484,8 @@ policy.
 
 1. Download and install [Arduino IDE 2](https://www.arduino.cc/en/software).
 2. Open **File > Preferences**.
-3. Add this URL to **Additional Boards Manager URLs**:
-
-   ```text
-   https://espressif.github.io/arduino-esp32/package_esp32_index.json
-   ```
+3. Add `https://espressif.github.io/arduino-esp32/package_esp32_index.json`
+   to **Additional Boards Manager URLs**.
 
 4. Open **Tools > Board > Boards Manager**.
 5. Search for `esp32 by Espressif Systems`.
@@ -534,11 +493,8 @@ policy.
 
 ### 12.2 Open the firmware
 
-In Arduino IDE, select **File > Open** and open:
-
-```text
-$HOME/robotics/line-following-robot-pai/firmware/esp32s3_line_following/esp32s3_line_following.ino
-```
+In Arduino IDE, select **File > Open** and open
+`$HOME/robotics/line-following-robot-pai/firmware/esp32s3_line_following/esp32s3_line_following.ino`.
 
 Arduino IDE will compile this sketch together with the policy in
 `firmware/generated/`.
@@ -553,11 +509,7 @@ Arduino IDE will compile this sketch together with the policy in
 
 The Serial Monitor is optional. If you want to inspect the loaded policy before
 disconnecting USB, open **Tools > Serial Monitor**, select `115200 baud`, and
-look for a line in this form:
-
-```text
-policy_id=... config_id=... mirror=... flip=...
-```
+look for a line like **`policy_id=... config_id=... mirror=... flip=...`**.
 
 Serial Monitor is not required for normal operation.
 
@@ -573,15 +525,13 @@ starts the trained policy automatically.
 
 ## 13. Your generated result files
 
-```text
-isaac_sim/output/rl/bc_candidate/model_bc.pt
-isaac_sim/output/rl/ppo_candidate/model_*.pt
-isaac_sim/output/rl/ppo_candidate/policy.onnx
-firmware/policies/<policy-version>/
-firmware/generated/line_following_policy.h
-firmware/generated/line_following_policy_manifest.json
-firmware/generated/line_following_policy_vectors.csv
-```
+- `isaac_sim/output/rl/bc_candidate/model_bc.pt`
+- `isaac_sim/output/rl/ppo_candidate/model_*.pt`
+- `isaac_sim/output/rl/ppo_candidate/policy.onnx`
+- `firmware/policies/<policy-version>/`
+- `firmware/generated/line_following_policy.h`
+- `firmware/generated/line_following_policy_manifest.json`
+- `firmware/generated/line_following_policy_vectors.csv`
 
 These files are generated locally and are not uploaded to Git automatically.
 Never edit the weights in `line_following_policy.h` by hand.
