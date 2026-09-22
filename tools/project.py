@@ -497,6 +497,88 @@ def script(relative: str, *arguments: object) -> list[str]:
     return [PYTHON, str(ROOT / relative), *(str(value) for value in arguments)]
 
 
+def checkpoint_iteration(path: Path) -> int:
+    """Return the numeric iteration from model_<N>.pt, or -1 if unmatched."""
+    match = re.fullmatch(r"model_(\d+)\.pt", path.name)
+    return int(match.group(1)) if match else -1
+
+
+def select_best_checkpoint(checkpoint_dir: Path, output_dir: Path) -> Path:
+    """Evaluate saved PPO checkpoints on validation seeds 0-19 and select the best score."""
+    checkpoint_dir = checkpoint_dir if checkpoint_dir.is_absolute() else ROOT / checkpoint_dir
+    output_dir = output_dir if output_dir.is_absolute() else ROOT / output_dir
+    checkpoints = sorted(checkpoint_dir.glob("model_*.pt"), key=checkpoint_iteration)
+    if not checkpoints:
+        raise SystemExit(f"No model_*.pt checkpoints found in {checkpoint_dir}")
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    results: list[dict[str, object]] = []
+
+    print(
+        f"Checkpoint selection will evaluate {len(checkpoints)} saved models on "
+        "validation seeds 0-19. This can take much longer than evaluating one model."
+    )
+
+    for index, checkpoint in enumerate(checkpoints, start=1):
+        checkpoint_output = output_dir / checkpoint.stem
+        print(f"\n[{index}/{len(checkpoints)}] evaluating {checkpoint.name}", flush=True)
+        run(script(
+            "isaac_sim/scripts/evaluate_line_following.py",
+            "--policy-backend", "rl",
+            "--checkpoint", checkpoint,
+            "--seeds", 20,
+            "--output-dir", checkpoint_output,
+        ))
+        report_path = checkpoint_output / "evaluation_report.json"
+        if not report_path.is_file():
+            raise RuntimeError(f"Checkpoint evaluation did not write {report_path}")
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        score = int(report.get("randomized_passes", 0))
+        total = int(report.get("randomized_total", 20))
+        nominal_pass = bool(report.get("nominal", {}).get("success"))
+        iteration = checkpoint_iteration(checkpoint)
+        result = {
+            "checkpoint": str(checkpoint.relative_to(ROOT)) if checkpoint.is_relative_to(ROOT) else str(checkpoint),
+            "iteration": iteration,
+            "validation_passes": score,
+            "validation_total": total,
+            "nominal_pass": nominal_pass,
+        }
+        results.append(result)
+        print(
+            f"{checkpoint.name}: validation={score}/{total}, "
+            f"nominal={'PASS' if nominal_pass else 'FAIL'}"
+        )
+
+    best = max(
+        results,
+        key=lambda item: (
+            int(item["validation_passes"]),
+            bool(item["nominal_pass"]),
+            int(item["iteration"]),
+        ),
+    )
+    selection_report = {
+        "selection_rule": "highest validation passes, then nominal PASS, then latest iteration",
+        "validation_seeds": "0-19",
+        "selected_checkpoint": best["checkpoint"],
+        "results": results,
+    }
+    (output_dir / "checkpoint_selection.json").write_text(
+        json.dumps(selection_report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    (output_dir / "SELECTED_CHECKPOINT.txt").write_text(
+        str(best["checkpoint"]) + "\n",
+        encoding="utf-8",
+    )
+    print(
+        f"\nSelected checkpoint: {best['checkpoint']} "
+        f"({best['validation_passes']}/{best['validation_total']})"
+    )
+    return Path(str(best["checkpoint"]))
+
+
 def checked_camera_episode(
     output_relative: str,
     *arguments: object,
@@ -584,6 +666,21 @@ def main() -> None:
     holdout_parser = subparsers.add_parser("holdout", help="Evaluate untouched seeds 20-39.")
     holdout_parser.add_argument("--checkpoint", type=Path, required=True)
     holdout_parser.add_argument("--output-dir", type=Path, default=Path("isaac_sim/output/evaluation_candidate_holdout"))
+
+    select_parser = subparsers.add_parser(
+        "select-checkpoint",
+        help="Optionally compare all saved PPO checkpoints on validation seeds 0-19.",
+    )
+    select_parser.add_argument(
+        "--checkpoint-dir",
+        type=Path,
+        default=Path("isaac_sim/output/rl/ppo_candidate"),
+    )
+    select_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("isaac_sim/output/checkpoint_selection"),
+    )
 
     onnx_parser = subparsers.add_parser("export-onnx", help="Export one selected checkpoint to ONNX.")
     onnx_parser.add_argument("--checkpoint", type=Path, required=True)
@@ -681,6 +778,8 @@ def main() -> None:
             "--checkpoint", arguments.checkpoint, "--seed-start", 20, "--seeds", 20,
             "--save-perception-debug", "--output-dir", arguments.output_dir,
         ))
+    elif arguments.command == "select-checkpoint":
+        select_best_checkpoint(arguments.checkpoint_dir, arguments.output_dir)
     elif arguments.command == "export-onnx":
         run(script(
             "isaac_sim/scripts/play_policy_rl.py", "--headless", "--num_envs", 1, "--steps", 0,
