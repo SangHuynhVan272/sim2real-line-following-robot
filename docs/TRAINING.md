@@ -70,26 +70,22 @@ python tools/project.py train-ppo --bc-run isaac_sim/output/rl/bc_candidate --ou
 
 The command uses seed 0 and a BC anchor weight of `0.2`.
 
-For the simplest teaching workflow, use the latest saved checkpoint. It is the
-default tutorial choice, not a claim that the final iteration is always the
-best model.
+For the standard teaching workflow, no manual checkpoint filename is needed.
+The next step automatically uses the newest saved checkpoint, regardless of the
+iteration number.
 
-Optionally, compare all saved PPO checkpoints on validation seeds 0-19:
-
-```bash
-python tools/project.py select-checkpoint
-```
-
-The selector chooses the checkpoint with the highest validation score. Ties are
-resolved by preferring nominal PASS and then the later iteration. It writes the
-chosen path to:
-
-```text
-isaac_sim/output/checkpoint_selection/SELECTED_CHECKPOINT.txt
-```
-
-This is intentionally optional because it may require many rendered-camera
-episodes and can take substantially longer than evaluating one checkpoint.
+> [!TIP]
+> **Optional — select the strongest saved validation score**
+>
+> Run the following only when you want to compare all saved PPO checkpoints:
+>
+> ```bash
+> python tools/project.py select-checkpoint
+> ```
+>
+> The selector evaluates the saved checkpoints on validation seeds 0-19 and
+> records the highest-scoring one. Ties prefer nominal PASS and then the later
+> iteration. This can take substantially longer than evaluating one checkpoint.
 
 ## 5. Evaluate the selected checkpoint
 
@@ -101,12 +97,10 @@ echo "Using checkpoint: $CHECKPOINT"
 ```
 
 If `select-checkpoint` was skipped, this resolves the newest saved checkpoint.
-If it was run, this resolves the checkpoint with the strongest saved validation
-score.
+If it was run, this resolves the checkpoint selected on validation seeds 0-19.
 
-For checkpoint comparison, use seeds 0-19 as the validation set. Higher
-completion scores are better; 20/20 is the maximum. Do not repeatedly use seeds
-20-39 for checkpoint selection if you want them to remain an unbiased holdout.
+Higher completion scores are better; 20/20 is the maximum. Keep seeds 20-39 as
+the holdout instead of using them for checkpoint selection.
 
 Run validation:
 
