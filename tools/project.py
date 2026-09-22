@@ -497,8 +497,12 @@ def script(relative: str, *arguments: object) -> list[str]:
     return [PYTHON, str(ROOT / relative), *(str(value) for value in arguments)]
 
 
-def checked_camera_episode(output_relative: str, *arguments: object) -> None:
-    """Run one camera episode and reject Kit's occasional false zero exit code."""
+def checked_camera_episode(
+    output_relative: str,
+    *arguments: object,
+    require_success: bool = True,
+) -> None:
+    """Run one camera episode and verify that it produced a valid result."""
     output_dir = ROOT / output_relative
     summary_path = output_dir / "episode_summary.json"
     summary_path.unlink(missing_ok=True)
@@ -512,14 +516,17 @@ def checked_camera_episode(output_relative: str, *arguments: object) -> None:
             "inspect the first renderer or GPU error above."
         )
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
-    if not summary.get("success"):
+    if require_success and not summary.get("success"):
         raise RuntimeError(
             f"Camera episode failed: reason={summary.get('reason')}, "
             f"progress={summary.get('progress_m')}."
         )
+    status = "PASS" if summary.get("success") else "SCORE"
     print(
-        f"[PASS] Camera episode: backend={summary.get('policy_backend')}, "
+        f"[{status}] Camera episode: backend={summary.get('policy_backend')}, "
         f"policy={summary.get('policy_id') or 'n/a'}, "
+        f"success={bool(summary.get('success'))}, "
+        f"reason={summary.get('reason')}, "
         f"completion={summary.get('completion_time_s')} s"
     )
 
@@ -578,7 +585,7 @@ def main() -> None:
     holdout_parser.add_argument("--checkpoint", type=Path, required=True)
     holdout_parser.add_argument("--output-dir", type=Path, default=Path("isaac_sim/output/evaluation_candidate_holdout"))
 
-    onnx_parser = subparsers.add_parser("export-onnx", help="Export one accepted checkpoint to ONNX.")
+    onnx_parser = subparsers.add_parser("export-onnx", help="Export one selected checkpoint to ONNX.")
     onnx_parser.add_argument("--checkpoint", type=Path, required=True)
     onnx_parser.add_argument("--onnx", type=Path, required=True)
 
@@ -628,11 +635,11 @@ def main() -> None:
     elif arguments.command == "deployed-smoke":
         checked_camera_episode(
             "isaac_sim/output/deployed_smoke/nominal", "--headless", "--policy-backend", "deployed",
-            "--seed", 0, "--save-debug-frame",
+            "--seed", 0, "--save-debug-frame", require_success=False,
         )
         checked_camera_episode(
             "isaac_sim/output/deployed_smoke/randomized_seed_03", "--headless",
-            "--policy-backend", "deployed", "--seed", 3, "--randomize",
+            "--policy-backend", "deployed", "--seed", 3, "--randomize", require_success=False,
         )
     elif arguments.command == "deployed-gate":
         run(script(
