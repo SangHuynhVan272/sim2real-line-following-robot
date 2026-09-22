@@ -485,9 +485,12 @@ policy.
 1. Download the latest [Arduino IDE 2](https://www.arduino.cc/en/software) and
    choose **Linux AppImage (64-bit X86-64)**.
 
-2. Make the downloaded AppImage executable and open it:
+2. Copy and run this block once. It installs the AppImage runtime dependency,
+   makes the downloaded Arduino IDE executable, and opens it:
 
 ```bash
+sudo apt update
+sudo apt install -y libfuse2t64
 ARDUINO_APPIMAGE="$(ls -t "$HOME"/Downloads/arduino-ide_*_Linux_64bit.AppImage 2>/dev/null | head -n 1)"
 chmod +x "$ARDUINO_APPIMAGE"
 "$ARDUINO_APPIMAGE"
