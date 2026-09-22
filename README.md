@@ -482,10 +482,20 @@ policy.
 
 ### 12.1 Install Arduino IDE and ESP32 support
 
-1. Download and install [Arduino IDE 2](https://www.arduino.cc/en/software).
-2. Open **File > Preferences**.
-3. Add `https://espressif.github.io/arduino-esp32/package_esp32_index.json`
-   to **Additional Boards Manager URLs**.
+1. Download the latest [Arduino IDE 2](https://www.arduino.cc/en/software) and
+   choose **Linux AppImage (64-bit X86-64)**.
+
+2. Make the downloaded AppImage executable and open it:
+
+```bash
+ARDUINO_APPIMAGE="$(ls -t "$HOME"/Downloads/arduino-ide_*_Linux_64bit.AppImage 2>/dev/null | head -n 1)"
+chmod +x "$ARDUINO_APPIMAGE"
+"$ARDUINO_APPIMAGE"
+```
+
+3. Open **File > Preferences** and add
+   `https://espressif.github.io/arduino-esp32/package_esp32_index.json` to
+   **Additional Boards Manager URLs**.
 
 4. Open **Tools > Board > Boards Manager**.
 5. Search for `esp32 by Espressif Systems`.
