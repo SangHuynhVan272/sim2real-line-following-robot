@@ -407,8 +407,18 @@ This optional step can take much longer because each saved checkpoint is tested
 on 20 rendered-camera scenarios. Beginners may skip it and continue with the
 latest checkpoint.
 
-Step 9 measures the selected checkpoint's performance before export. A score
-below 20/20 does not block export or deployment.
+After either choice, resolve the checkpoint that the remaining steps will use:
+
+```bash
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
+echo "Using checkpoint: $CHECKPOINT"
+```
+
+If you skipped `select-checkpoint`, this prints the newest saved checkpoint. If
+you ran `select-checkpoint`, it prints the checkpoint chosen by that command.
+
+Step 9 measures this checkpoint's performance before export. A score below
+20/20 does not block export or deployment.
 
 ## 9. Evaluate the trained model
 
@@ -420,12 +430,8 @@ name remains `gate` for compatibility, but interpret its result as a validation
 score:
 
 ```bash
-CHECKPOINT="$(find isaac_sim/output/rl/ppo_candidate -maxdepth 1 -type f -name 'model_*.pt' | sort -V | tail -n 1)"
-if [ -z "$CHECKPOINT" ]; then
-  echo "ERROR: no PPO checkpoint was found"
-else
-  python tools/project.py gate --checkpoint "$CHECKPOINT"
-fi
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
+python tools/project.py gate --checkpoint "$CHECKPOINT"
 ```
 
 A typical result is:
@@ -446,12 +452,8 @@ select checkpoints.
 After the checkpoint is selected, run the holdout on seeds 20 through 39:
 
 ```bash
-CHECKPOINT="$(find isaac_sim/output/rl/ppo_candidate -maxdepth 1 -type f -name 'model_*.pt' | sort -V | tail -n 1)"
-if [ -z "$CHECKPOINT" ]; then
-  echo "ERROR: no PPO checkpoint was found"
-else
-  python tools/project.py holdout --checkpoint "$CHECKPOINT"
-fi
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
+python tools/project.py holdout --checkpoint "$CHECKPOINT"
 ```
 
 The holdout is reported in the same form:
@@ -470,12 +472,8 @@ retrain before export.
 Export the selected checkpoint to ONNX:
 
 ```bash
-CHECKPOINT="$(find isaac_sim/output/rl/ppo_candidate -maxdepth 1 -type f -name 'model_*.pt' | sort -V | tail -n 1)"
-if [ -z "$CHECKPOINT" ]; then
-  echo "ERROR: no PPO checkpoint was found"
-else
-  python tools/project.py export-onnx --checkpoint "$CHECKPOINT" --onnx isaac_sim/output/rl/ppo_candidate/policy.onnx
-fi
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
+python tools/project.py export-onnx --checkpoint "$CHECKPOINT" --onnx isaac_sim/output/rl/ppo_candidate/policy.onnx
 ```
 
 Check the ONNX file:
