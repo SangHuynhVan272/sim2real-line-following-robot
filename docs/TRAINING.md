@@ -1,5 +1,10 @@
 # Train and export a policy
 
+> [!NOTE]
+> Copyable code blocks in this guide are commands intended for Terminal. Status
+> messages, example results, interface definitions, and file paths are shown as
+> normal text, tables, lists, or notes.
+
 This is the primary project workflow. It takes a learner from a validated
 simulator to a new `.pt` checkpoint, an ONNX export and the C header compiled by
 that learner's ESP32-S3 firmware.
@@ -13,11 +18,10 @@ train, evaluation, export or firmware commands below.
 
 ## 1. Keep the deployment contract unchanged
 
-```text
-observation = [e_y, e_theta_rad, line_confidence,
-               rpm_left, rpm_right, duty_left_prev, duty_right_prev]
-action      = [duty_left, duty_right]
-```
+| Interface | Values |
+|---|---|
+| Observation | `[e_y, e_theta_rad, line_confidence, rpm_left, rpm_right, duty_left_prev, duty_right_prev]` |
+| Action | `[duty_left, duty_right]` |
 
 - `e_y` and both duties are in `[-1, 1]`.
 - `e_theta_rad` is in radians; confidence is in `[0, 1]`.
@@ -54,10 +58,8 @@ python tools/project.py train-bc --output-dir isaac_sim/output/rl/bc_candidate
 
 This creates:
 
-```text
-isaac_sim/output/rl/bc_candidate/model_bc.pt
-isaac_sim/output/rl/bc_candidate/bc_summary.json
-```
+- `isaac_sim/output/rl/bc_candidate/model_bc.pt`
+- `isaac_sim/output/rl/bc_candidate/bc_summary.json`
 
 Behavior cloning fits the actor in pre-tanh space. Do not replace it with a
 post-tanh fit; that previously produced saturated actors.
@@ -114,12 +116,8 @@ Then run the holdout on the same selected checkpoint:
 python tools/project.py holdout --checkpoint "$CHECKPOINT"
 ```
 
-Example:
-
-```text
-Validation: 19/20
-Holdout:    20/20
-```
+> [!NOTE]
+> Example scores: **Validation 19/20; Holdout 20/20.**
 
 This is a valid result. It may continue through ONNX export, C-header export,
 and firmware deployment. A lower score simply means the policy failed in more
@@ -159,7 +157,7 @@ the policy ID and evaluation reports with the learner's results.
 
 Run the failed seed with perception diagnostics:
 
-```text
+```bash
 python isaac_sim/scripts/run_line_following.py --headless --seed 11 --randomize --save-perception-debug --policy-backend rl --checkpoint isaac_sim/output/rl/ppo_candidate/model_<N>.pt
 ```
 
