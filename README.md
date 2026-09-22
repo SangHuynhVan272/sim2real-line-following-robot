@@ -485,15 +485,31 @@ policy.
 1. Download the latest [Arduino IDE 2](https://www.arduino.cc/en/software) and
    choose **Linux AppImage (64-bit X86-64)**.
 
-2. Copy and run this block once. It installs the AppImage runtime dependency,
-   makes the downloaded Arduino IDE executable, and opens it:
+2. Copy and run this block once. It installs the AppImage runtime dependency
+   and creates the `arduino-ide` command:
 
 ```bash
 sudo apt update
 sudo apt install -y libfuse2t64
+
 ARDUINO_APPIMAGE="$(ls -t "$HOME"/Downloads/arduino-ide_*_Linux_64bit.AppImage 2>/dev/null | head -n 1)"
-chmod +x "$ARDUINO_APPIMAGE"
-"$ARDUINO_APPIMAGE"
+
+sudo mkdir -p /opt/arduino-ide
+sudo cp "$ARDUINO_APPIMAGE" /opt/arduino-ide/arduino-ide.AppImage
+sudo chmod +x /opt/arduino-ide/arduino-ide.AppImage
+
+sudo tee /usr/local/bin/arduino-ide >/dev/null <<'EOF'
+#!/bin/bash
+exec /opt/arduino-ide/arduino-ide.AppImage --no-sandbox "$@"
+EOF
+
+sudo chmod +x /usr/local/bin/arduino-ide
+```
+
+To open Arduino IDE, open a Terminal in the Ubuntu desktop session and run:
+
+```bash
+arduino-ide
 ```
 
 3. Open **File > Preferences** and add
@@ -517,8 +533,9 @@ Arduino IDE will compile this sketch together with the policy in
 1. Keep the robot battery power switched off.
 2. Connect the robot to the computer with its USB data cable.
 3. Select **Tools > Board > esp32 > ESP32S3 Dev Module**.
-4. Select the robot USB port under **Tools > Port**.
-5. Click **Upload** and wait for `Done uploading`.
+4. Select **Tools > USB CDC On Boot > Enabled**.
+5. Select the robot USB port under **Tools > Port**.
+6. Click **Upload** and wait for `Done uploading`.
 
 The Serial Monitor is optional. If you want to inspect the loaded policy before
 disconnecting USB, open **Tools > Serial Monitor**, select `115200 baud`, and
