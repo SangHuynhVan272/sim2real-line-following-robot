@@ -5,8 +5,8 @@ deploying that policy on an ESP32-S3 robot with Arduino IDE.
 
 ![Dual-view Isaac Sim line-following demo](docs/media/simulation_rollout.gif)
 
-You do not need a pretrained model. By following this README from top to
-bottom, you will create:
+You do not need a pretrained model. By following this README from the correct
+starting point, you will create:
 
 | Output | Purpose |
 |---|---|
@@ -23,8 +23,59 @@ install -> validate simulation -> train BC -> train PPO
 
 ## 1. Before you begin
 
-This guide assumes that you are using a new computer and that the robot has
-already been assembled, wired, and configured for this project.
+This README supports two starting points.
+
+### A. Isaac Sim and Isaac Lab are already installed
+
+If you already installed Isaac Sim and Isaac Lab by following NVIDIA's
+**Installation using Isaac Sim Pip Package** procedure, and that installation
+uses the validated stack listed below, do **not** reinstall or move Isaac Lab.
+Activate the existing environment and continue directly to **Step 6**.
+
+Your existing IsaacLab source repository may be located anywhere. Do not clone
+this robot project inside the IsaacLab repository. Step 6 creates a separate
+project workspace under `$HOME/robotics/line-following-robot-pai`.
+
+### B. New computer or clean installation
+
+If Isaac Sim and Isaac Lab are not installed yet, follow **Steps 1-5** in this
+README. Steps 2-5 reproduce NVIDIA's **Installation using Isaac Sim Pip
+Package** workflow for Linux x86_64, so you do not need to open the NVIDIA
+installation page separately while following this guide.
+
+Reference: [NVIDIA Isaac Lab - Installation using Isaac Sim Pip Package](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/pip_installation.html)
+
+This project uses the following validated base stack:
+
+| Component | Validated version |
+|---|---|
+| Ubuntu | 24.04 LTS 64-bit |
+| Python | 3.11 |
+| Isaac Sim | 5.1.0 |
+| Isaac Lab | v2.3.2 |
+| PyTorch | 2.7.0, CUDA 12.8 wheel |
+| torchvision | 0.22.0 |
+| NVIDIA driver | 580.65.06 or newer |
+
+NVIDIA's `main` documentation tracks the current Isaac Lab development branch.
+This README intentionally pins **Isaac Lab v2.3.2** instead of tracking `main`
+so that the project uses a reproducible version that can be tested consistently.
+
+For a new installation, the recommended directory layout is:
+
+```text
+$HOME/
+├── IsaacLab/                         # NVIDIA Isaac Lab source
+├── robotics/
+│   └── line-following-robot-pai/     # this project
+└── miniconda3/
+    └── envs/
+        └── env_isaaclab/             # Python environment
+```
+
+The Conda environment, the IsaacLab source repository, and this project are
+three separate things. Activating `env_isaaclab` does not change your current
+directory.
 
 Your computer needs:
 
@@ -32,6 +83,7 @@ Your computer needs:
 - an NVIDIA RTX GPU with at least 16 GB VRAM;
 - NVIDIA driver 580.65.06 or newer;
 - at least 32 GB RAM and 50 GB of free SSD space;
+- GLIBC 2.35 or newer;
 - a stable Internet connection for the first installation.
 
 This workflow has not been validated on Windows, WSL, macOS, or Ubuntu 22.04.
@@ -45,23 +97,24 @@ This workflow has not been validated on Windows, WSL, macOS, or Ubuntu 22.04.
 5. Stop if you see `[FAIL]`, `Error`, or `Traceback`, or if the command never
    returns to the terminal prompt. Do not continue by ignoring an error.
 
-Check the GPU first:
+Check the GPU and GLIBC first:
 
 ```bash
 nvidia-smi
+ldd --version | head -n 1
 ```
 
-The command must show the GPU name, driver version, and VRAM. If it fails or is
-not found, install or repair the NVIDIA driver before continuing.
+`nvidia-smi` must show the GPU name, driver version, and VRAM. The GLIBC version
+must be 2.35 or newer. If either check fails, repair the system installation
+before continuing.
 
 ## 2. Install system tools and Miniconda
 
-Run:
+If you are following **Path A** above, skip to Step 6. Otherwise run:
 
 ```bash
 sudo apt update
 sudo apt install -y git wget cmake build-essential
-mkdir -p "$HOME/robotics"
 cd /tmp
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 bash miniconda.sh -b -p "$HOME/miniconda3"
@@ -92,11 +145,14 @@ After `conda activate`, the terminal prompt must begin with:
 (env_isaaclab)
 ```
 
-## 4. Install Isaac Sim 5.1 and PyTorch
+## 4. Install and verify Isaac Sim 5.1
+
+Keep `env_isaaclab` active and install Isaac Sim exactly through the pip-package
+workflow used by NVIDIA:
 
 ```bash
 python -m pip install "isaacsim[all,extscache]==5.1.0" --extra-index-url https://pypi.nvidia.com
-python -m pip install --upgrade --force-reinstall torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu128
+python -m pip install -U torch==2.7.0 torchvision==0.22.0 --index-url https://download.pytorch.org/whl/cu128
 ```
 
 Start Isaac Sim once:
@@ -109,40 +165,110 @@ Accept the NVIDIA EULA if prompted. The first launch may take more than ten
 minutes while extensions are downloaded and the shader cache is built. When
 Isaac Sim has opened completely, close it and return to Terminal.
 
-## 5. Install Isaac Lab
+## 5. Install and verify Isaac Lab
+
+Keep `env_isaaclab` active. Isaac Lab is installed separately from this robot
+project. For a new installation, place the NVIDIA repository directly under
+your home directory:
 
 ```bash
-cd "$HOME/robotics"
-git clone https://github.com/isaac-sim/IsaacLab.git
+cd "$HOME"
+git clone https://github.com/isaac-sim/IsaacLab.git --branch v2.3.2
 cd IsaacLab
-git checkout v2.3.2
 ./isaaclab.sh --install rsl_rl
 ```
 
-Reinstall the package versions required by this project:
+The NVIDIA documentation normally demonstrates the same source-install workflow
+with the current `main` branch. This guide uses the `v2.3.2` tag so the teaching
+project does not change when NVIDIA updates `main`.
+
+Verify Isaac Lab from the top of the IsaacLab repository:
 
 ```bash
-python -m pip install --upgrade --force-reinstall torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu128
-python -m pip install numpy==1.26.0 onnx==1.20.1 pillow==11.3.0 click==8.1.7 psutil==5.9.8 typing_extensions==4.12.2
-```
-
-Verify Isaac Lab:
-
-```bash
-cd "$HOME/robotics/IsaacLab"
 ./isaaclab.sh -p scripts/tutorials/00_sim/create_empty.py
 ```
 
 An empty Isaac Sim window should open. Press `Ctrl + C` in Terminal to stop the
 program, and then close the Isaac Sim window.
 
+At this point the NVIDIA stack is installed. Do not place the robot project
+inside `$HOME/IsaacLab`.
+
 ## 6. Download the robot project
 
+Whether you used an existing NVIDIA installation or completed Steps 1-5 above,
+start the project itself in a separate directory:
+
 ```bash
+conda activate env_isaaclab
+mkdir -p "$HOME/robotics"
 cd "$HOME/robotics"
 git clone https://github.com/SangHuynhVan272/sim2real-line-following-robot.git line-following-robot-pai
 cd line-following-robot-pai
 ```
+
+The intended layout is therefore:
+
+```text
+$HOME/IsaacLab                       # NVIDIA framework, for a new installation
+$HOME/robotics/line-following-robot-pai  # this project
+```
+
+If you already had Isaac Lab in another directory, leave it there. Only the
+robot project is placed under `$HOME/robotics`.
+
+### 6.1 Check the existing NVIDIA base environment
+
+Before adding project-specific packages, confirm that the active environment
+matches the base versions used by this project:
+
+```bash
+python - <<'PY'
+from importlib.metadata import version
+
+required = {
+    "isaacsim": "5.1.0",
+    "torch": "2.7.0",
+    "torchvision": "0.22.0",
+}
+
+errors = []
+for package, expected in required.items():
+    actual = version(package)
+    if not (actual == expected or actual.startswith(expected + "+") or actual.startswith(expected + ".")):
+        errors.append(f"{package}: expected {expected}, found {actual}")
+
+import isaaclab
+import isaaclab_rl
+import rsl_rl
+
+if errors:
+    raise SystemExit(
+        "Base NVIDIA environment does not match this project:\n  "
+        + "\n  ".join(errors)
+        + "\nDo not force-downgrade a different working Isaac Lab environment. "
+          "Use a clean env_isaaclab by following Steps 2-5 instead."
+    )
+
+print("Base NVIDIA environment OK")
+PY
+```
+
+If this check reports a version mismatch, stop. Do not modify a different
+working Isaac Lab environment just to make this project pass.
+
+### 6.2 Install the project compatibility packages
+
+The NVIDIA installation above provides Isaac Sim, PyTorch, Isaac Lab, and
+`rsl_rl`. This project also pins a small set of Python packages used by its
+validation and export tools. Install them only after the base check passes:
+
+```bash
+python -m pip install torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu128
+python -m pip install numpy==1.26.0 onnx==1.20.1 pillow==11.3.0 click==8.1.7 psutil==5.9.8 typing_extensions==4.12.2
+```
+
+These commands do not clone or reinstall Isaac Sim or Isaac Lab.
 
 Run every remaining command from the `line-following-robot-pai` directory.
 
@@ -446,8 +572,9 @@ Never edit the weights in `line_following_policy.h` by hand.
 |---|---|
 | The prompt does not show `(env_isaaclab)` | Run `conda activate env_isaaclab` |
 | `python: command not found` | Activate `env_isaaclab`, then try again |
-| `ModuleNotFoundError: isaaclab` | Enter `$HOME/robotics/IsaacLab` and rerun `./isaaclab.sh --install rsl_rl` |
+| `ModuleNotFoundError: isaaclab` | Activate the environment used for Isaac Lab. If you followed Steps 2-5, enter `$HOME/IsaacLab` and rerun `./isaaclab.sh --install rsl_rl` |
 | `torch.cuda.is_available()` is `false` | Repair the NVIDIA driver and reinstall the cu128 PyTorch packages from Step 4 |
+| `doctor` reports a different Torch/torchvision version | Do not force-downgrade another working Isaac Lab environment; create the validated `env_isaaclab` by following Steps 2-5 |
 | The first Isaac Sim launch takes a long time | Wait for extensions and shaders to finish downloading |
 | `No space left on device` | Check free SSD space and close applications using many file watchers |
 | `PARITY` does not end with `PARITY OK` | Do not train; restore the correct source and configuration first |
