@@ -583,27 +583,33 @@ def resolve_checkpoint(
     checkpoint_dir: Path = Path("isaac_sim/output/rl/ppo_candidate"),
     selection_file: Path = Path("isaac_sim/output/checkpoint_selection/SELECTED_CHECKPOINT.txt"),
 ) -> Path:
-    """Return the optional selected checkpoint, otherwise the newest saved checkpoint."""
+    """Return a current optional selection, otherwise the newest saved checkpoint."""
     checkpoint_dir_abs = checkpoint_dir if checkpoint_dir.is_absolute() else ROOT / checkpoint_dir
     selection_file_abs = selection_file if selection_file.is_absolute() else ROOT / selection_file
-
-    if selection_file_abs.is_file():
-        selected_text = selection_file_abs.read_text(encoding="utf-8").strip()
-        if not selected_text:
-            raise SystemExit(f"Selected-checkpoint file is empty: {selection_file_abs}")
-        selected = Path(selected_text)
-        selected_abs = selected if selected.is_absolute() else ROOT / selected
-        if not selected_abs.is_file():
-            raise SystemExit(
-                f"Selected checkpoint no longer exists: {selected_text}. "
-                "Re-run 'python tools/project.py select-checkpoint' or delete the stale selection file."
-            )
-        return selected_abs
 
     checkpoints = sorted(checkpoint_dir_abs.glob("model_*.pt"), key=checkpoint_iteration)
     if not checkpoints:
         raise SystemExit(f"No model_*.pt checkpoints found in {checkpoint_dir_abs}")
-    return checkpoints[-1]
+    newest = checkpoints[-1]
+
+    if selection_file_abs.is_file():
+        # A new PPO run may have created newer checkpoints after an older
+        # selection file. In that case, ignore the stale selection and fall
+        # back to the newest checkpoint until select-checkpoint is run again.
+        if selection_file_abs.stat().st_mtime >= newest.stat().st_mtime:
+            selected_text = selection_file_abs.read_text(encoding="utf-8").strip()
+            if not selected_text:
+                raise SystemExit(f"Selected-checkpoint file is empty: {selection_file_abs}")
+            selected = Path(selected_text)
+            selected_abs = selected if selected.is_absolute() else ROOT / selected
+            if not selected_abs.is_file():
+                raise SystemExit(
+                    f"Selected checkpoint no longer exists: {selected_text}. "
+                    "Re-run 'python tools/project.py select-checkpoint' or delete the stale selection file."
+                )
+            return selected_abs
+
+    return newest
 
 
 def checked_camera_episode(
