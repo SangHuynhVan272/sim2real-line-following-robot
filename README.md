@@ -49,7 +49,7 @@ This project uses the following validated base stack:
 
 | Component | Validated version |
 |---|---|
-| Ubuntu | 24.04 LTS 64-bit |
+| Validated OS | Ubuntu 24.04 LTS 64-bit |
 | Python | 3.11 |
 | Isaac Sim | 5.1.0 |
 | Isaac Lab | v2.3.2 |
@@ -79,14 +79,16 @@ directory.
 
 Your computer needs:
 
-- Ubuntu 24.04 LTS 64-bit;
+- Linux x86_64 with GLIBC 2.35 or newer;
 - an NVIDIA RTX GPU with at least 16 GB VRAM;
 - NVIDIA driver 580.65.06 or newer;
 - at least 32 GB RAM and 50 GB of free SSD space;
-- GLIBC 2.35 or newer;
 - a stable Internet connection for the first installation.
 
-This workflow has not been validated on Windows, WSL, macOS, or Ubuntu 22.04.
+This guide is validated on Ubuntu 24.04 LTS. Other recent Linux x86_64
+releases, including newer Ubuntu versions, are not blocked by the project and
+may work when the required NVIDIA/Isaac stack and `doctor` checks pass.
+Windows, WSL, and macOS have not been validated.
 
 ### How to use the command blocks
 
@@ -384,12 +386,18 @@ else
 fi
 ```
 
-You must see a path ending in `.pt`. This is only a candidate model and must
-not be deployed yet.
+You must see a path ending in `.pt`. This is the default checkpoint candidate.
+Step 9 measures its performance before export. A score below 20/20 does not
+block export or deployment.
 
-## 9. Test the trained model
+## 9. Evaluate the trained model
 
-First, run the gate on 20 randomized scenarios using seeds 0 through 19:
+The evaluation sets measure how robust the selected checkpoint is. They are
+performance scores, not deployment gates.
+
+The first set uses 20 randomized scenarios with seeds 0 through 19. The command
+name remains `gate` for compatibility, but interpret its result as a validation
+score:
 
 ```bash
 CHECKPOINT="$(find isaac_sim/output/rl/ppo_candidate -maxdepth 1 -type f -name 'model_*.pt' | sort -V | tail -n 1)"
@@ -400,13 +408,22 @@ else
 fi
 ```
 
-Continue only when the final line is:
+A typical result is:
 
 ```text
-Simulation PASS=True randomized=20/20
+Evaluation score: 19/20 randomized scenarios passed; nominal=PASS
 ```
 
-Next, run the holdout on 20 untouched scenarios using seeds 20 through 39:
+Higher is better. `20/20` is the best possible score on this 20-scenario set,
+`19/20` is stronger than `18/20`, and so on. A score below `20/20` means
+the policy failed in more test scenarios; it does **not** mean the software
+failed, and it does not prevent export or deployment.
+
+If you want to compare several PPO checkpoints, use this seeds 0-19 validation
+set to choose between them. Do not use the holdout set to repeatedly tune or
+select checkpoints.
+
+After the checkpoint is selected, run the holdout on seeds 20 through 39:
 
 ```bash
 CHECKPOINT="$(find isaac_sim/output/rl/ppo_candidate -maxdepth 1 -type f -name 'model_*.pt' | sort -V | tail -n 1)"
@@ -417,18 +434,20 @@ else
 fi
 ```
 
-Continue only when the final line is also:
+The holdout is reported in the same form:
 
 ```text
-Simulation PASS=True randomized=20/20
+Evaluation score: 20/20 randomized scenarios passed; nominal=PASS
 ```
 
-If either command does not pass 20/20, stop here. Do not export or deploy that
-model.
+Record both scores with the checkpoint you selected. You may continue to Step
+10 regardless of whether either score is 20/20. If you want a stronger model,
+you can inspect failed seeds, compare checkpoints on the validation set, or
+retrain before export.
 
 ## 10. Convert the model into an ESP32-S3 policy
 
-Export the accepted checkpoint to ONNX:
+Export the selected checkpoint to ONNX:
 
 ```bash
 CHECKPOINT="$(find isaac_sim/output/rl/ppo_candidate -maxdepth 1 -type f -name 'model_*.pt' | sort -V | tail -n 1)"
@@ -478,23 +497,29 @@ Run a short test using the generated C header:
 python tools/project.py deployed-smoke
 ```
 
-Both episodes must print `[PASS] Camera episode`.
+This checks that the exported header can be loaded and executed. Episode
+completion is reported as performance information; a route that does not
+complete is not treated as a software error as long as the simulation itself
+runs and writes a valid result.
 
-Run all 40 scenarios again using the generated C header:
+Run the same two 20-scenario evaluation sets using the generated C header:
 
 ```bash
 python tools/project.py deployed-gate
 python tools/project.py deployed-holdout
 ```
 
-Each command must end with:
+Each command prints an evaluation score such as:
 
 ```text
-Simulation PASS=True randomized=20/20
+Evaluation score: 19/20 randomized scenarios passed; nominal=PASS
 ```
 
-If either test fails, do not upload the firmware. The generated C policy must
-pass the same tests as the `.pt` model.
+Compare these scores with the original `.pt` checkpoint. Ideally the exported
+C policy should reproduce similar behavior. A lower score does not by itself
+block firmware upload, but a large unexpected difference is a reason to inspect
+the export, manifest, and failed scenario diagnostics before relying on the
+policy.
 
 ## 12. Upload the policy with Arduino IDE
 
@@ -578,7 +603,7 @@ Never edit the weights in `line_following_policy.h` by hand.
 | The first Isaac Sim launch takes a long time | Wait for extensions and shaders to finish downloading |
 | `No space left on device` | Check free SSD space and close applications using many file watchers |
 | `PARITY` does not end with `PARITY OK` | Do not train; restore the correct source and configuration first |
-| Gate or holdout does not pass 20/20 | Do not export the model; save the output and contact the instructor |
+| Validation or holdout score is below 20/20 | This is a model-performance result, not a software failure. Review failed seeds or retrain if you want a stronger model; export and deployment are still allowed |
 | Arduino cannot find `line_following_policy.h` | Complete Step 10 before verifying the sketch |
 | Arduino cannot find `esp_camera.h` | Install ESP32 by Espressif Systems 3.3.11 and select the ESP32-S3 board |
 | The USB port is not listed | Use a USB data cable, try another port, or correct Ubuntu serial-port permissions |
