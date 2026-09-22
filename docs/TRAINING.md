@@ -93,26 +93,31 @@ episodes and can take substantially longer than evaluating one checkpoint.
 
 ## 5. Evaluate the selected checkpoint
 
-`<N>` is the checkpoint iteration you selected. You may use the latest saved
-checkpoint for the simple teaching workflow, or the result of
-`select-checkpoint` when you want the strongest saved validation score.
+Use one command to resolve the checkpoint for the remaining workflow:
 
-For checkpoint comparison, use seeds 0-19 as the validation set. It is
-legitimate to compare checkpoints on this set. Higher completion scores are
-better; 20/20 is the maximum. Do not repeatedly use seeds 20-39 for checkpoint
-selection if you want them to remain an unbiased holdout.
+```bash
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
+echo "Using checkpoint: $CHECKPOINT"
+```
+
+If `select-checkpoint` was skipped, this resolves the newest saved checkpoint.
+If it was run, this resolves the checkpoint with the strongest saved validation
+score.
+
+For checkpoint comparison, use seeds 0-19 as the validation set. Higher
+completion scores are better; 20/20 is the maximum. Do not repeatedly use seeds
+20-39 for checkpoint selection if you want them to remain an unbiased holdout.
 
 Run validation:
 
 ```bash
-python tools/project.py gate --checkpoint isaac_sim/output/rl/ppo_candidate/model_<N>.pt
+python tools/project.py gate --checkpoint "$CHECKPOINT"
 ```
 
-Then, after selecting the checkpoint you want to report or deploy, run the
-holdout:
+Then run the holdout on the same selected checkpoint:
 
 ```bash
-python tools/project.py holdout --checkpoint isaac_sim/output/rl/ppo_candidate/model_<N>.pt
+python tools/project.py holdout --checkpoint "$CHECKPOINT"
 ```
 
 Example:
@@ -132,7 +137,8 @@ policy on holdout seeds.
 ## 6. Export the selected checkpoint
 
 ```bash
-python tools/project.py export-onnx --checkpoint isaac_sim/output/rl/ppo_candidate/model_<N>.pt --onnx isaac_sim/output/rl/ppo_candidate/policy.onnx
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
+python tools/project.py export-onnx --checkpoint "$CHECKPOINT" --onnx isaac_sim/output/rl/ppo_candidate/policy.onnx
 python tools/project.py export-header --onnx isaac_sim/output/rl/ppo_candidate/policy.onnx --version-name YYYYMMDD_ppo_candidate
 python tools/project.py source-check
 python tools/project.py deployed-smoke
