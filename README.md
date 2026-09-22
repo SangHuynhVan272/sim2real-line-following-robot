@@ -374,68 +374,44 @@ Training is complete when Terminal prints:
 training complete; checkpoints in ...
 ```
 
-For the simplest teaching workflow, use the newest saved checkpoint as the
-default candidate:
+For the normal teaching workflow, **do not hard-code a checkpoint filename**.
+You do not need to know whether the last model is `model_599.pt`,
+`model_699.pt`, or another iteration number. Step 9 automatically uses the
+newest saved checkpoint.
 
-```bash
-CHECKPOINT="$(find isaac_sim/output/rl/ppo_candidate -maxdepth 1 -type f -name 'model_*.pt' | sort -V | tail -n 1)"
-if [ -z "$CHECKPOINT" ]; then
-  echo "ERROR: no PPO checkpoint was found"
-else
-  echo "PPO candidate: $CHECKPOINT"
-fi
-```
+> [!TIP]
+> **Optional — search for a stronger saved checkpoint**
+>
+> Skip this box on your first run. If you want to compare the saved PPO
+> checkpoints and use the one with the highest validation score, run:
+>
+> ```bash
+> python tools/project.py select-checkpoint
+> ```
+>
+> This evaluates every saved `model_*.pt` checkpoint on validation seeds 0-19
+> and records the selected checkpoint. It can take much longer than evaluating
+> one model. After it finishes, continue to Step 9 normally.
 
-You must see a path ending in `.pt`. This latest checkpoint is the default
-choice for the tutorial; it is not automatically the best checkpoint.
+## 9. Evaluate the trained model
 
-**Recommended for your first run:** skip the optional checkpoint search and
-continue with the newest checkpoint. Once you have completed the full workflow
-successfully, you can come back and compare saved checkpoints if you want a
-stronger validation score.
+The evaluation sets measure how robust the checkpoint is. They are performance
+scores, not deployment gates.
 
-If you want to search for a stronger saved checkpoint, optionally run:
-
-```bash
-python tools/project.py select-checkpoint
-```
-
-This evaluates every saved `model_*.pt` checkpoint on validation seeds 0-19,
-selects the highest-scoring one, and writes:
-
-```text
-isaac_sim/output/checkpoint_selection/SELECTED_CHECKPOINT.txt
-isaac_sim/output/checkpoint_selection/checkpoint_selection.json
-```
-
-This optional step can take much longer because each saved checkpoint is tested
-on 20 rendered-camera scenarios. Beginners may skip it and continue with the
-latest checkpoint.
-
-After either choice, resolve the checkpoint that the remaining steps will use:
+First resolve the checkpoint automatically:
 
 ```bash
 CHECKPOINT="$(python tools/project.py checkpoint-path)"
 echo "Using checkpoint: $CHECKPOINT"
 ```
 
-If you skipped `select-checkpoint`, this prints the newest saved checkpoint. If
-you ran `select-checkpoint`, it prints the checkpoint chosen by that command.
+If you skipped the optional box in Step 8.2, this uses the newest saved
+checkpoint. If you ran `select-checkpoint`, it uses the checkpoint selected by
+that command.
 
-Step 9 measures this checkpoint's performance before export. A score below
-20/20 does not block export or deployment.
-
-## 9. Evaluate the trained model
-
-The evaluation sets measure how robust the selected checkpoint is. They are
-performance scores, not deployment gates.
-
-The first set uses 20 randomized scenarios with seeds 0 through 19. The command
-name remains `gate` for compatibility, but interpret its result as a validation
-score:
+Now evaluate it on validation seeds 0 through 19:
 
 ```bash
-CHECKPOINT="$(python tools/project.py checkpoint-path)"
 python tools/project.py gate --checkpoint "$CHECKPOINT"
 ```
 
@@ -449,10 +425,6 @@ Higher is better. `20/20` is the best possible score on this 20-scenario set,
 `19/20` is stronger than `18/20`, and so on. A score below `20/20` means
 the policy failed in more test scenarios; it does **not** mean the software
 failed, and it does not prevent export or deployment.
-
-If you want to compare several PPO checkpoints, use this seeds 0-19 validation
-set to choose between them. Do not use the holdout set to repeatedly tune or
-select checkpoints.
 
 After the checkpoint is selected, run the holdout on seeds 20 through 39:
 
