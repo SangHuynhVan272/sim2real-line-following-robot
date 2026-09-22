@@ -412,9 +412,9 @@ Record both scores with the checkpoint you selected. You may continue to Step
 you can inspect failed seeds, compare checkpoints on the validation set, or
 retrain before export.
 
-## 10. Convert the model into an ESP32-S3 policy
+## 10. Export and verify the ESP32-S3 policy
 
-Export the selected checkpoint to ONNX:
+### 10.1 Export the selected checkpoint to ONNX
 
 ```bash
 CHECKPOINT="$(python tools/project.py checkpoint-path)"
@@ -429,8 +429,7 @@ test -f isaac_sim/output/rl/ppo_candidate/policy.onnx && echo "ONNX OK"
 
 Continue only when `ONNX OK` is printed.
 
-Convert the ONNX model into a C header and place it in the directory used by
-the Arduino firmware:
+### 10.2 Convert ONNX to the firmware C header
 
 ```bash
 POLICY_VERSION="$(date +%Y%m%d_%H%M%S)_ppo_student"
@@ -448,39 +447,20 @@ Continue only when `FIRMWARE POLICY OK` is printed.
 Do not copy the `.pt` or `.onnx` file into Arduino. Arduino uses only the C
 header generated at `firmware/generated/line_following_policy.h`.
 
-## 11. Test the exact policy that will be uploaded
+### 10.3 Test the exact generated policy
 
-Run a short test using the generated C header:
+Run one short verification using the generated C header:
 
 ```bash
 python tools/project.py deployed-smoke
 ```
 
-This checks that the exported header can be loaded and executed. Episode
-completion is reported as performance information; a route that does not
-complete is not treated as a software error as long as the simulation itself
-runs and writes a valid result.
+This checks that the exported header in `firmware/generated/` can be loaded and
+executed before it is compiled into the ESP32-S3 firmware.
 
-Run the same two 20-scenario evaluation sets using the generated C header:
+## 11. Upload the policy with Arduino IDE
 
-```bash
-python tools/project.py deployed-gate
-python tools/project.py deployed-holdout
-```
-
-> [!NOTE]
-> Each command prints an evaluation score, for example:
-> **`Evaluation score: 19/20 randomized scenarios passed; nominal=PASS`**
-
-Compare these scores with the original `.pt` checkpoint. Ideally the exported
-C policy should reproduce similar behavior. A lower score does not by itself
-block firmware upload, but a large unexpected difference is a reason to inspect
-the export, manifest, and failed scenario diagnostics before relying on the
-policy.
-
-## 12. Upload the policy with Arduino IDE
-
-### 12.1 Install Arduino IDE and ESP32 support
+### 11.1 Install Arduino IDE and ESP32 support
 
 1. Download the latest [Arduino IDE 2](https://www.arduino.cc/en/software) and
    choose **Linux AppImage (64-bit X86-64)**.
@@ -520,7 +500,7 @@ arduino-ide
 5. Search for `esp32 by Espressif Systems`.
 6. Select version **3.3.11** and click **Install**.
 
-### 12.2 Open the firmware
+### 11.2 Open the firmware
 
 In Arduino IDE, select **File > Open** and open
 `$HOME/robotics/line-following-robot-pai/firmware/esp32s3_line_following/esp32s3_line_following.ino`.
@@ -528,7 +508,7 @@ In Arduino IDE, select **File > Open** and open
 Arduino IDE will compile this sketch together with the policy in
 `firmware/generated/`.
 
-### 12.3 Select the board and upload
+### 11.3 Select the board and upload
 
 1. Keep the robot battery power switched off.
 2. Connect the robot to the computer with its USB data cable.
@@ -553,7 +533,7 @@ After the upload:
 The firmware waits for three valid camera frames containing the line and then
 starts the trained policy automatically.
 
-## 13. Your generated result files
+## 12. Your generated result files
 
 - `isaac_sim/output/rl/bc_candidate/model_bc.pt`
 - `isaac_sim/output/rl/ppo_candidate/model_*.pt`
@@ -566,7 +546,7 @@ starts the trained policy automatically.
 These files are generated locally and are not uploaded to Git automatically.
 Never edit the weights in `line_following_policy.h` by hand.
 
-## 14. Troubleshooting
+## 13. Troubleshooting
 
 | Symptom | Action |
 |---|---|
@@ -593,7 +573,7 @@ python tools/project.py doctor
 python tools/project.py source-check --skip-cpp
 ```
 
-## 15. License
+## 14. License
 
 The project source, documentation, CAD files, and generated policy artifacts
 are released under the [BSD 3-Clause License](LICENSE). Third-party frameworks
