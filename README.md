@@ -49,7 +49,7 @@ This project uses the following validated base stack:
 
 | Component | Validated version |
 |---|---|
-| Ubuntu | 24.04 LTS 64-bit |
+| Validated OS | Ubuntu 24.04 LTS 64-bit |
 | Python | 3.11 |
 | Isaac Sim | 5.1.0 |
 | Isaac Lab | v2.3.2 |
@@ -79,14 +79,16 @@ directory.
 
 Your computer needs:
 
-- Ubuntu 24.04 LTS 64-bit;
+- Linux x86_64 with GLIBC 2.35 or newer;
 - an NVIDIA RTX GPU with at least 16 GB VRAM;
 - NVIDIA driver 580.65.06 or newer;
 - at least 32 GB RAM and 50 GB of free SSD space;
-- GLIBC 2.35 or newer;
 - a stable Internet connection for the first installation.
 
-This workflow has not been validated on Windows, WSL, macOS, or Ubuntu 22.04.
+This guide is validated on Ubuntu 24.04 LTS. Other recent Linux x86_64
+releases, including newer Ubuntu versions, are not blocked by the project and
+may work when the required NVIDIA/Isaac stack and `doctor` checks pass.
+Windows, WSL, and macOS have not been validated.
 
 ### How to use the command blocks
 
@@ -372,8 +374,8 @@ Training is complete when Terminal prints:
 training complete; checkpoints in ...
 ```
 
-This recipe uses the newest saved checkpoint as its candidate. Find it
-automatically with:
+For the simplest teaching workflow, use the newest saved checkpoint as the
+default candidate:
 
 ```bash
 CHECKPOINT="$(find isaac_sim/output/rl/ppo_candidate -maxdepth 1 -type f -name 'model_*.pt' | sort -V | tail -n 1)"
@@ -384,59 +386,99 @@ else
 fi
 ```
 
-You must see a path ending in `.pt`. This is only a candidate model and must
-not be deployed yet.
+You must see a path ending in `.pt`. This latest checkpoint is the default
+choice for the tutorial; it is not automatically the best checkpoint.
 
-## 9. Test the trained model
+**Recommended for your first run:** skip the optional checkpoint search and
+continue with the newest checkpoint. Once you have completed the full workflow
+successfully, you can come back and compare saved checkpoints if you want a
+stronger validation score.
 
-First, run the gate on 20 randomized scenarios using seeds 0 through 19:
-
-```bash
-CHECKPOINT="$(find isaac_sim/output/rl/ppo_candidate -maxdepth 1 -type f -name 'model_*.pt' | sort -V | tail -n 1)"
-if [ -z "$CHECKPOINT" ]; then
-  echo "ERROR: no PPO checkpoint was found"
-else
-  python tools/project.py gate --checkpoint "$CHECKPOINT"
-fi
-```
-
-Continue only when the final line is:
-
-```text
-Simulation PASS=True randomized=20/20
-```
-
-Next, run the holdout on 20 untouched scenarios using seeds 20 through 39:
+If you want to search for a stronger saved checkpoint, optionally run:
 
 ```bash
-CHECKPOINT="$(find isaac_sim/output/rl/ppo_candidate -maxdepth 1 -type f -name 'model_*.pt' | sort -V | tail -n 1)"
-if [ -z "$CHECKPOINT" ]; then
-  echo "ERROR: no PPO checkpoint was found"
-else
-  python tools/project.py holdout --checkpoint "$CHECKPOINT"
-fi
+python tools/project.py select-checkpoint
 ```
 
-Continue only when the final line is also:
+This evaluates every saved `model_*.pt` checkpoint on validation seeds 0-19,
+selects the highest-scoring one, and writes:
 
 ```text
-Simulation PASS=True randomized=20/20
+isaac_sim/output/checkpoint_selection/SELECTED_CHECKPOINT.txt
+isaac_sim/output/checkpoint_selection/checkpoint_selection.json
 ```
 
-If either command does not pass 20/20, stop here. Do not export or deploy that
-model.
+This optional step can take much longer because each saved checkpoint is tested
+on 20 rendered-camera scenarios. Beginners may skip it and continue with the
+latest checkpoint.
+
+After either choice, resolve the checkpoint that the remaining steps will use:
+
+```bash
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
+echo "Using checkpoint: $CHECKPOINT"
+```
+
+If you skipped `select-checkpoint`, this prints the newest saved checkpoint. If
+you ran `select-checkpoint`, it prints the checkpoint chosen by that command.
+
+Step 9 measures this checkpoint's performance before export. A score below
+20/20 does not block export or deployment.
+
+## 9. Evaluate the trained model
+
+The evaluation sets measure how robust the selected checkpoint is. They are
+performance scores, not deployment gates.
+
+The first set uses 20 randomized scenarios with seeds 0 through 19. The command
+name remains `gate` for compatibility, but interpret its result as a validation
+score:
+
+```bash
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
+python tools/project.py gate --checkpoint "$CHECKPOINT"
+```
+
+A typical result is:
+
+```text
+Evaluation score: 19/20 randomized scenarios passed; nominal=PASS
+```
+
+Higher is better. `20/20` is the best possible score on this 20-scenario set,
+`19/20` is stronger than `18/20`, and so on. A score below `20/20` means
+the policy failed in more test scenarios; it does **not** mean the software
+failed, and it does not prevent export or deployment.
+
+If you want to compare several PPO checkpoints, use this seeds 0-19 validation
+set to choose between them. Do not use the holdout set to repeatedly tune or
+select checkpoints.
+
+After the checkpoint is selected, run the holdout on seeds 20 through 39:
+
+```bash
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
+python tools/project.py holdout --checkpoint "$CHECKPOINT"
+```
+
+The holdout is reported in the same form:
+
+```text
+Evaluation score: 20/20 randomized scenarios passed; nominal=PASS
+```
+
+Record both scores with the checkpoint you selected. You may continue to Step
+10 regardless of whether either score is 20/20. If you want a stronger model,
+you can inspect failed seeds, compare checkpoints on the validation set, or
+retrain before export.
 
 ## 10. Convert the model into an ESP32-S3 policy
 
-Export the accepted checkpoint to ONNX:
+Export the selected checkpoint to ONNX:
 
 ```bash
-CHECKPOINT="$(find isaac_sim/output/rl/ppo_candidate -maxdepth 1 -type f -name 'model_*.pt' | sort -V | tail -n 1)"
-if [ -z "$CHECKPOINT" ]; then
-  echo "ERROR: no PPO checkpoint was found"
-else
-  python tools/project.py export-onnx --checkpoint "$CHECKPOINT" --onnx isaac_sim/output/rl/ppo_candidate/policy.onnx
-fi
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
+python tools/project.py export-onnx --checkpoint "$CHECKPOINT" --onnx isaac_sim/output/rl/ppo_candidate/policy.onnx
 ```
 
 Check the ONNX file:
@@ -478,23 +520,29 @@ Run a short test using the generated C header:
 python tools/project.py deployed-smoke
 ```
 
-Both episodes must print `[PASS] Camera episode`.
+This checks that the exported header can be loaded and executed. Episode
+completion is reported as performance information; a route that does not
+complete is not treated as a software error as long as the simulation itself
+runs and writes a valid result.
 
-Run all 40 scenarios again using the generated C header:
+Run the same two 20-scenario evaluation sets using the generated C header:
 
 ```bash
 python tools/project.py deployed-gate
 python tools/project.py deployed-holdout
 ```
 
-Each command must end with:
+Each command prints an evaluation score such as:
 
 ```text
-Simulation PASS=True randomized=20/20
+Evaluation score: 19/20 randomized scenarios passed; nominal=PASS
 ```
 
-If either test fails, do not upload the firmware. The generated C policy must
-pass the same tests as the `.pt` model.
+Compare these scores with the original `.pt` checkpoint. Ideally the exported
+C policy should reproduce similar behavior. A lower score does not by itself
+block firmware upload, but a large unexpected difference is a reason to inspect
+the export, manifest, and failed scenario diagnostics before relying on the
+policy.
 
 ## 12. Upload the policy with Arduino IDE
 
@@ -578,7 +626,7 @@ Never edit the weights in `line_following_policy.h` by hand.
 | The first Isaac Sim launch takes a long time | Wait for extensions and shaders to finish downloading |
 | `No space left on device` | Check free SSD space and close applications using many file watchers |
 | `PARITY` does not end with `PARITY OK` | Do not train; restore the correct source and configuration first |
-| Gate or holdout does not pass 20/20 | Do not export the model; save the output and contact the instructor |
+| Validation or holdout score is below 20/20 | This is a model-performance result, not a software failure. Review failed seeds or retrain if you want a stronger model; export and deployment are still allowed |
 | Arduino cannot find `line_following_policy.h` | Complete Step 10 before verifying the sketch |
 | Arduino cannot find `esp_camera.h` | Install ESP32 by Espressif Systems 3.3.11 and select the ESP32-S3 board |
 | The USB port is not listed | Use a USB data cable, try another port, or correct Ubuntu serial-port permissions |

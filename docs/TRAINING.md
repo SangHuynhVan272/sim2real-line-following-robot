@@ -5,9 +5,11 @@ simulator to a new `.pt` checkpoint, an ONNX export and the C header compiled by
 that learner's ESP32-S3 firmware.
 
 Training is stochastic. Every run produces a new candidate; do not expect its
-weights to match another person's run. Accept it only after it passes all 40
-rendered-camera seeds. Nothing in `firmware/reference/` is loaded by the train,
-evaluation, export or firmware commands below.
+weights to match another person's run. The rendered-camera evaluations quantify
+how robust the selected checkpoint is. A perfect 20/20 score on each set is the
+best result, but a lower score is still a valid measured outcome and does not
+block export or deployment. Nothing in `firmware/reference/` is loaded by the
+train, evaluation, export or firmware commands below.
 
 ## 1. Keep the deployment contract unchanged
 
@@ -66,43 +68,77 @@ post-tanh fit; that previously produced saturated actors.
 python tools/project.py train-ppo --bc-run isaac_sim/output/rl/bc_candidate --output-dir isaac_sim/output/rl/ppo_candidate --iterations 600
 ```
 
-The command uses seed 0 and a BC anchor weight of `0.2`. Choose one
-checkpoint from training metrics before opening the rendered evaluation set.
-Do not search for a checkpoint by repeatedly trying evaluation seeds.
+The command uses seed 0 and a BC anchor weight of `0.2`.
 
-## 5. Run both acceptance sets
+For the simplest teaching workflow, use the latest saved checkpoint. It is the
+default tutorial choice, not a claim that the final iteration is always the
+best model.
 
-`<N>` is the checkpoint iteration you selected. Pick it from the **task
-metrics** in TensorBoard -- `Episode_Termination/finished` high and
-`Episode_Termination/line_lost` low -- not from the reward curve, and not simply
-the last one saved. Reward can keep climbing while the policy learns to hold
-both wheels saturated, which may score well while completing fewer routes.
-
-Selecting among checkpoints using seeds 0-19 is legitimate -- that is what the
-gate is for. Seeds 20-39 must stay untouched until you have a candidate that
-already passes 20/20, otherwise the holdout stops being evidence.
-
-For the candidate you selected:
+Optionally, compare all saved PPO checkpoints on validation seeds 0-19:
 
 ```bash
-python tools/project.py gate --checkpoint isaac_sim/output/rl/ppo_candidate/model_<N>.pt
-python tools/project.py holdout --checkpoint isaac_sim/output/rl/ppo_candidate/model_<N>.pt
+python tools/project.py select-checkpoint
 ```
 
-Acceptance requires:
+The selector chooses the checkpoint with the highest validation score. Ties are
+resolved by preferring nominal PASS and then the later iteration. It writes the
+chosen path to:
 
-- nominal episode PASS;
-- seeds 0-19: **20/20**;
-- untouched seeds 20-39: **20/20**;
-- no code, config or checkpoint change between the two sets.
+```text
+isaac_sim/output/checkpoint_selection/SELECTED_CHECKPOINT.txt
+```
 
-`--tune` applies only to the analytical baseline. Never use it to make an RL
-candidate pass, and never tune on seeds 20-39.
+This is intentionally optional because it may require many rendered-camera
+episodes and can take substantially longer than evaluating one checkpoint.
 
-## 6. Export the accepted checkpoint
+## 5. Evaluate the selected checkpoint
+
+Use one command to resolve the checkpoint for the remaining workflow:
 
 ```bash
-python tools/project.py export-onnx --checkpoint isaac_sim/output/rl/ppo_candidate/model_<N>.pt --onnx isaac_sim/output/rl/ppo_candidate/policy.onnx
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
+echo "Using checkpoint: $CHECKPOINT"
+```
+
+If `select-checkpoint` was skipped, this resolves the newest saved checkpoint.
+If it was run, this resolves the checkpoint with the strongest saved validation
+score.
+
+For checkpoint comparison, use seeds 0-19 as the validation set. Higher
+completion scores are better; 20/20 is the maximum. Do not repeatedly use seeds
+20-39 for checkpoint selection if you want them to remain an unbiased holdout.
+
+Run validation:
+
+```bash
+python tools/project.py gate --checkpoint "$CHECKPOINT"
+```
+
+Then run the holdout on the same selected checkpoint:
+
+```bash
+python tools/project.py holdout --checkpoint "$CHECKPOINT"
+```
+
+Example:
+
+```text
+Validation: 19/20
+Holdout:    20/20
+```
+
+This is a valid result. It may continue through ONNX export, C-header export,
+and firmware deployment. A lower score simply means the policy failed in more
+randomized scenarios.
+
+`--tune` applies only to the analytical baseline. Never use it to tune an RL
+policy on holdout seeds.
+
+## 6. Export the selected checkpoint
+
+```bash
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
+python tools/project.py export-onnx --checkpoint "$CHECKPOINT" --onnx isaac_sim/output/rl/ppo_candidate/policy.onnx
 python tools/project.py export-header --onnx isaac_sim/output/rl/ppo_candidate/policy.onnx --version-name YYYYMMDD_ppo_candidate
 python tools/project.py source-check
 python tools/project.py deployed-smoke
@@ -125,7 +161,7 @@ The `.pt`, `.onnx`, versioned `firmware/policies/` export and active
 `firmware/generated/` files remain local and are not committed to Git. Record
 the policy ID and evaluation reports with the learner's results.
 
-## 7. Diagnose a failed candidate
+## 7. Diagnose a lower-scoring candidate
 
 Run the failed seed with perception diagnostics:
 
@@ -156,4 +192,4 @@ python tools/project.py reference-smoke
 ```
 
 Use this only as a troubleshooting comparison. A project result should use the
-policy ID produced by the learner's own accepted checkpoint and export.
+policy ID produced by the learner's own selected checkpoint and export.

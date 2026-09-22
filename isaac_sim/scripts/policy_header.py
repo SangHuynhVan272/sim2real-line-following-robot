@@ -2,7 +2,7 @@
 
 The generated C header is the deployment artifact compiled by the ESP32-S3.
 The same loader handles the optional public reference fixture and the local
-policy produced by a learner's accepted checkpoint.
+policy produced by a learner's selected checkpoint.
 """
 
 from __future__ import annotations

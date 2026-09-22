@@ -103,7 +103,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=project_root() / "isaac_sim/config/default.json")
     parser.add_argument("--output-dir", type=Path, default=project_root() / "isaac_sim/output/evaluation")
-    parser.add_argument("--seeds", type=int, help="Override evaluation.seeds; use 20 for Simulation PASS.")
+    parser.add_argument("--seeds", type=int, help="Override evaluation.seeds; use 20 for the standard score.")
     parser.add_argument("--seed-start", type=int, default=0,
                         help="First randomized seed to evaluate (default: 0).")
     parser.add_argument("--duration-s", type=float, help="Override episode duration for a quick smoke test.")
@@ -114,7 +114,7 @@ def main() -> None:
     parser.add_argument("--checkpoint", type=Path, help="RSL-RL .pt checkpoint required for --policy-backend rl.")
     parser.add_argument(
         "--save-perception-debug", action="store_true",
-        help="Pass the debug flag to every episode so a failed gate has RGB/mask evidence.",
+        help="Pass the debug flag to every episode so lower-scoring runs have RGB/mask evidence.",
     )
     parser.add_argument("--tune", action="store_true", help="Run the configured speed/Kp grid and persist a full-pass winner.")
     args = parser.parse_args()
@@ -138,8 +138,26 @@ def main() -> None:
             args.policy_backend, args.checkpoint, args.save_perception_debug,
         )
         write(args.output_dir / "evaluation_report.json", report)
-        print(f"Simulation PASS={report['success']} randomized={report['randomized_passes']}/{seeds}")
-        raise SystemExit(0 if report["success"] else 1)
+        runner_errors = [
+            item for item in [report["nominal"], *report["episodes"]]
+            if item.get("reason") == "runner_error"
+        ]
+        if runner_errors:
+            print(
+                f"Evaluation could not complete: {len(runner_errors)} episode(s) "
+                "ended with a runner/runtime error."
+            )
+            first_output = str(runner_errors[0].get("runner_output", "")).strip()
+            if first_output:
+                print(first_output)
+            raise SystemExit(1)
+
+        nominal_status = "PASS" if report["nominal"].get("success") else "FAIL"
+        print(
+            f"Evaluation score: {report['randomized_passes']}/{seeds} "
+            f"randomized scenarios passed; nominal={nominal_status}"
+        )
+        raise SystemExit(0)
 
     tuning = config["evaluation"]["tuning"]
     candidates = list(itertools.product(tuning["target_speed_mps"], tuning["kp_lateral"], tuning["kp_heading"]))

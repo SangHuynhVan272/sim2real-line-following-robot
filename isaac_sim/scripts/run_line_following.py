@@ -1209,7 +1209,8 @@ def run_episode(config: dict, args, scenario: dict) -> dict:
             raise ValueError("RL policy backend requires a checkpoint path.")
         learned_policy = load_rl_policy(checkpoint_path, Path(args.config))
     elif policy_backend in {"reference", "deployed"}:
-        artifact_dir = project_root() / "firmware" / policy_backend
+        artifact_name = "reference" if policy_backend == "reference" else "generated"
+        artifact_dir = project_root() / "firmware" / artifact_name
         learned_policy, policy_id = load_header_policy(
             artifact_dir / "line_following_policy.h",
             artifact_dir / "line_following_policy_manifest.json",
@@ -1828,7 +1829,8 @@ def main() -> None:
     if args.policy_backend != "rl" and args.checkpoint is not None:
         raise SystemExit("--checkpoint is valid only with --policy-backend rl.")
     if args.policy_backend in {"reference", "deployed"}:
-        artifact_dir = project_root() / "firmware" / args.policy_backend
+        artifact_name = "reference" if args.policy_backend == "reference" else "generated"
+        artifact_dir = project_root() / "firmware" / artifact_name
         missing = [
             path.name
             for path in (

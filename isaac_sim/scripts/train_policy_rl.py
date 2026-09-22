@@ -72,8 +72,8 @@ parser.add_argument(
     default=None,
     help=(
         "Override rl.ppo.bc_anchor_weight for this run. Use 0 only when the warm-start "
-        "actor is deliberately untrusted and PPO must be free to leave it; the rendered "
-        "camera gates still decide whether the resulting checkpoint may be exported."
+        "actor is deliberately untrusted and PPO must be free to leave it; rendered "
+        "camera evaluation still measures the resulting checkpoint before export."
     ),
 )
 parser.add_argument("--output-dir", type=Path, default=None)
@@ -236,7 +236,7 @@ def main() -> None:
     )
     env.close()
     print(f"\ntraining complete; checkpoints in {log_dir}")
-    print("This is not Simulation PASS. Run the camera lane and the gate next.")
+    print("Training is complete. Run the rendered-camera evaluation next to measure checkpoint performance.")
 
 
 if __name__ == "__main__":
