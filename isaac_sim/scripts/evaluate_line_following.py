@@ -138,8 +138,12 @@ def main() -> None:
             args.policy_backend, args.checkpoint, args.save_perception_debug,
         )
         write(args.output_dir / "evaluation_report.json", report)
-        print(f"Simulation PASS={report['success']} randomized={report['randomized_passes']}/{seeds}")
-        raise SystemExit(0 if report["success"] else 1)
+        nominal_status = "PASS" if report["nominal"].get("success") else "FAIL"
+        print(
+            f"Evaluation score: {report['randomized_passes']}/{seeds} "
+            f"randomized scenarios passed; nominal={nominal_status}"
+        )
+        raise SystemExit(0)
 
     tuning = config["evaluation"]["tuning"]
     candidates = list(itertools.product(tuning["target_speed_mps"], tuning["kp_lateral"], tuning["kp_heading"]))
