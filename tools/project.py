@@ -579,6 +579,33 @@ def select_best_checkpoint(checkpoint_dir: Path, output_dir: Path) -> Path:
     return Path(str(best["checkpoint"]))
 
 
+def resolve_checkpoint(
+    checkpoint_dir: Path = Path("isaac_sim/output/rl/ppo_candidate"),
+    selection_file: Path = Path("isaac_sim/output/checkpoint_selection/SELECTED_CHECKPOINT.txt"),
+) -> Path:
+    """Return the optional selected checkpoint, otherwise the newest saved checkpoint."""
+    checkpoint_dir_abs = checkpoint_dir if checkpoint_dir.is_absolute() else ROOT / checkpoint_dir
+    selection_file_abs = selection_file if selection_file.is_absolute() else ROOT / selection_file
+
+    if selection_file_abs.is_file():
+        selected_text = selection_file_abs.read_text(encoding="utf-8").strip()
+        if not selected_text:
+            raise SystemExit(f"Selected-checkpoint file is empty: {selection_file_abs}")
+        selected = Path(selected_text)
+        selected_abs = selected if selected.is_absolute() else ROOT / selected
+        if not selected_abs.is_file():
+            raise SystemExit(
+                f"Selected checkpoint no longer exists: {selected_text}. "
+                "Re-run 'python tools/project.py select-checkpoint' or delete the stale selection file."
+            )
+        return selected_abs
+
+    checkpoints = sorted(checkpoint_dir_abs.glob("model_*.pt"), key=checkpoint_iteration)
+    if not checkpoints:
+        raise SystemExit(f"No model_*.pt checkpoints found in {checkpoint_dir_abs}")
+    return checkpoints[-1]
+
+
 def checked_camera_episode(
     output_relative: str,
     *arguments: object,
@@ -682,6 +709,21 @@ def main() -> None:
         default=Path("isaac_sim/output/checkpoint_selection"),
     )
 
+    checkpoint_path_parser = subparsers.add_parser(
+        "checkpoint-path",
+        help="Print the optional selected checkpoint, or the newest saved checkpoint if none was selected.",
+    )
+    checkpoint_path_parser.add_argument(
+        "--checkpoint-dir",
+        type=Path,
+        default=Path("isaac_sim/output/rl/ppo_candidate"),
+    )
+    checkpoint_path_parser.add_argument(
+        "--selection-file",
+        type=Path,
+        default=Path("isaac_sim/output/checkpoint_selection/SELECTED_CHECKPOINT.txt"),
+    )
+
     onnx_parser = subparsers.add_parser("export-onnx", help="Export one selected checkpoint to ONNX.")
     onnx_parser.add_argument("--checkpoint", type=Path, required=True)
     onnx_parser.add_argument("--onnx", type=Path, required=True)
@@ -780,6 +822,12 @@ def main() -> None:
         ))
     elif arguments.command == "select-checkpoint":
         select_best_checkpoint(arguments.checkpoint_dir, arguments.output_dir)
+    elif arguments.command == "checkpoint-path":
+        checkpoint = resolve_checkpoint(arguments.checkpoint_dir, arguments.selection_file)
+        try:
+            print(checkpoint.relative_to(ROOT))
+        except ValueError:
+            print(checkpoint)
     elif arguments.command == "export-onnx":
         run(script(
             "isaac_sim/scripts/play_policy_rl.py", "--headless", "--num_envs", 1, "--steps", 0,
