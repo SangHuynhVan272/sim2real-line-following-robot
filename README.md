@@ -374,8 +374,8 @@ Training is complete when Terminal prints:
 training complete; checkpoints in ...
 ```
 
-This recipe uses the newest saved checkpoint as its candidate. Find it
-automatically with:
+For the simplest teaching workflow, use the newest saved checkpoint as the
+default candidate:
 
 ```bash
 CHECKPOINT="$(find isaac_sim/output/rl/ppo_candidate -maxdepth 1 -type f -name 'model_*.pt' | sort -V | tail -n 1)"
@@ -386,9 +386,29 @@ else
 fi
 ```
 
-You must see a path ending in `.pt`. This is the default checkpoint candidate.
-Step 9 measures its performance before export. A score below 20/20 does not
-block export or deployment.
+You must see a path ending in `.pt`. This latest checkpoint is the default
+choice for the tutorial; it is not automatically the best checkpoint.
+
+If you want to search for a stronger saved checkpoint, optionally run:
+
+```bash
+python tools/project.py select-checkpoint
+```
+
+This evaluates every saved `model_*.pt` checkpoint on validation seeds 0-19,
+selects the highest-scoring one, and writes:
+
+```text
+isaac_sim/output/checkpoint_selection/SELECTED_CHECKPOINT.txt
+isaac_sim/output/checkpoint_selection/checkpoint_selection.json
+```
+
+This optional step can take much longer because each saved checkpoint is tested
+on 20 rendered-camera scenarios. Beginners may skip it and continue with the
+latest checkpoint.
+
+Step 9 measures the selected checkpoint's performance before export. A score
+below 20/20 does not block export or deployment.
 
 ## 9. Evaluate the trained model
 
