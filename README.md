@@ -389,6 +389,11 @@ fi
 You must see a path ending in `.pt`. This latest checkpoint is the default
 choice for the tutorial; it is not automatically the best checkpoint.
 
+**Recommended for your first run:** skip the optional checkpoint search and
+continue with the newest checkpoint. Once you have completed the full workflow
+successfully, you can come back and compare saved checkpoints if you want a
+stronger validation score.
+
 If you want to search for a stronger saved checkpoint, optionally run:
 
 ```bash
