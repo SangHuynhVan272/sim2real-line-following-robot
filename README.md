@@ -484,7 +484,12 @@ exec /opt/arduino-ide/arduino-ide.AppImage --no-sandbox "$@"
 EOF
 
 sudo chmod +x /usr/local/bin/arduino-ide
+sudo usermod -aG dialout "$USER"
 ```
+
+> [!IMPORTANT]
+> After the first installation, **sign out of Ubuntu and sign in again** so the
+> USB serial permission takes effect.
 
 To open Arduino IDE, open a Terminal in the Ubuntu desktop session and run:
 
