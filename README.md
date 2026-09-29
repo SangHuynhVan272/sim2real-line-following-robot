@@ -3,7 +3,7 @@
 This project takes you from training a line-following policy in Isaac Lab to
 deploying that policy on an ESP32-S3 robot with Arduino IDE.
 
-![Dual-view Isaac Sim line-following demo](docs/media/simulation_rollout.gif)
+![Sim2Real line-following robot project overview](docs/media/project_overview.webp)
 
 You do not need a pretrained model. By following this README from the correct
 starting point, you will create:
