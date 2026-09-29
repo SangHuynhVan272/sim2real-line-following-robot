@@ -56,7 +56,7 @@ def source_check(*, skip_cpp: bool = False) -> None:
     required = (
         "README.md",
         "docs/TRAINING.md",
-        "docs/media/simulation_rollout.gif",
+        "docs/media/project_overview.png",
         "isaac_sim/config/default.json",
         "isaac_sim/scripts/run_line_following.py",
         "isaac_sim/scripts/policy_header.py",
