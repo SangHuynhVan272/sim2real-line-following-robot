@@ -16,9 +16,10 @@ SELECTED.txt
 Generate them with:
 
 ```bash
+POLICY_VERSION="$(date +%Y%m%d_%H%M%S)_ppo_student"
 python tools/project.py export-header \
   --onnx isaac_sim/output/rl/ppo_candidate/policy.onnx \
-  --version-name YYYYMMDD_ppo_candidate
+  --version-name "$POLICY_VERSION"
 ```
 
 Do not edit the header manually or commit these generated files. The optional
