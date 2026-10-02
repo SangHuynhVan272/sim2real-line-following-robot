@@ -760,7 +760,7 @@ def main() -> None:
 
     select_parser = subparsers.add_parser(
         "select-checkpoint",
-        help="Optionally compare all saved PPO checkpoints on validation seeds 0-19.",
+        help="Optionally compare saved PPO checkpoints and prefer one that passes the teaching gate.",
     )
     select_parser.add_argument(
         "--checkpoint-dir",
@@ -845,11 +845,13 @@ def main() -> None:
             "--policy-backend", "deployed", "--seed", 3, "--randomize", require_success=False,
         )
     elif arguments.command == "deployed-gate":
+        deployed_gate_output = Path("isaac_sim/output/deployed_gate")
         run(script(
             "isaac_sim/scripts/evaluate_line_following.py", "--policy-backend", "deployed",
             "--seeds", 20, "--save-perception-debug",
-            "--output-dir", "isaac_sim/output/deployed_gate",
+            "--output-dir", deployed_gate_output,
         ))
+        enforce_teaching_gate(deployed_gate_output)
     elif arguments.command == "deployed-holdout":
         run(script(
             "isaac_sim/scripts/evaluate_line_following.py", "--policy-backend", "deployed",
