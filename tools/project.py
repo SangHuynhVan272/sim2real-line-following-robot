@@ -24,6 +24,9 @@ PYTHON = sys.executable
 TEACHING_GATE_RANDOMIZED_TOTAL = 20
 TEACHING_GATE_MIN_PASSES = 19
 
+MIN_SYSTEM_RAM_BYTES = 16_000_000_000
+RECOMMENDED_SYSTEM_RAM_BYTES = 32_000_000_000
+
 
 def run(command: list[str]) -> None:
     """Run one command from the repository root and preserve its exit status."""
@@ -388,11 +391,19 @@ def doctor(*, skip_gpu: bool = False) -> None:
     try:
         import psutil
 
-        ram_gib = psutil.virtual_memory().total / (1024 ** 3)
-        if ram_gib < 31.0:
-            failures.append(f"Isaac Sim requires at least 32 GB RAM, found {ram_gib:.1f} GiB")
+        ram_bytes = psutil.virtual_memory().total
+        ram_gib = ram_bytes / (1024 ** 3)
+        if ram_bytes < MIN_SYSTEM_RAM_BYTES:
+            failures.append(
+                f"This project requires at least 16 GB RAM, found {ram_gib:.1f} GiB"
+            )
         else:
             print(f"[PASS] System RAM: {ram_gib:.1f} GiB")
+            if ram_bytes < RECOMMENDED_SYSTEM_RAM_BYTES:
+                warnings.append(
+                    f"{ram_gib:.1f} GiB RAM meets the 16 GB minimum; "
+                    "32 GB or more is recommended for larger training workloads"
+                )
     except Exception as exc:
         failures.append(f"RAM check failed: {exc}")
 
