@@ -5,16 +5,17 @@
 > messages, example results, interface definitions, and file paths are shown as
 > normal text, tables, lists, or notes.
 
-This is the primary project workflow. It takes a learner from a validated
-simulator to a new `.pt` checkpoint, an ONNX export and the C header compiled by
-that learner's ESP32-S3 firmware.
+This guide is the detailed training companion to the root README. The root
+`README.md` is the single source of truth for the hands-on teaching workflow.
+This document expands the training, evaluation, export and diagnostic steps.
 
 Training is stochastic. Every run produces a new candidate; do not expect its
-weights to match another person's run. The rendered-camera evaluations quantify
-how robust the selected checkpoint is. A perfect 20/20 score on each set is the
-best result, but a lower score is still a valid measured outcome and does not
-block export or deployment. Nothing in `firmware/reference/` is loaded by the
-train, evaluation, export or firmware commands below.
+weights to match another person's run. Validation seeds 0-19 form the teaching
+deployment gate: `20/20` with `nominal=PASS` is the target, while `19/20`
+with `nominal=PASS` is also accepted. Holdout seeds 20-39 are recorded as a
+robustness score and do not block deployment after the validation gate passes.
+Nothing in `firmware/reference/` is loaded by the train, evaluation, export or
+firmware commands below.
 
 ## 1. Keep the deployment contract unchanged
 
