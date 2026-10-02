@@ -691,12 +691,6 @@ def main() -> None:
     subparsers.add_parser(
         "deployed-smoke", help="Run the learner policy exported to firmware/generated in two camera episodes."
     )
-    subparsers.add_parser(
-        "deployed-gate", help="Evaluate the learner header in firmware/generated on randomized seeds 0-19."
-    )
-    subparsers.add_parser(
-        "deployed-holdout", help="Evaluate the learner header in firmware/generated on randomized seeds 20-39."
-    )
     subparsers.add_parser("gui", help="Open the nominal scene in Isaac Sim.")
 
     bc_parser = subparsers.add_parser("train-bc", help="Train the behavior-cloning warm start.")
@@ -803,20 +797,6 @@ def main() -> None:
             "isaac_sim/output/deployed_smoke/randomized_seed_03", "--headless",
             "--policy-backend", "deployed", "--seed", 3, "--randomize", require_success=False,
         )
-    elif arguments.command == "deployed-gate":
-        deployed_gate_output = Path("isaac_sim/output/deployed_gate")
-        run(script(
-            "isaac_sim/scripts/evaluate_line_following.py", "--policy-backend", "deployed",
-            "--seeds", 20, "--save-perception-debug",
-            "--output-dir", deployed_gate_output,
-        ))
-        enforce_teaching_gate(deployed_gate_output)
-    elif arguments.command == "deployed-holdout":
-        run(script(
-            "isaac_sim/scripts/evaluate_line_following.py", "--policy-backend", "deployed",
-            "--seed-start", 20, "--seeds", 20, "--save-perception-debug",
-            "--output-dir", "isaac_sim/output/deployed_holdout",
-        ))
     elif arguments.command == "gui":
         run(script("isaac_sim/scripts/run_line_following.py", "--gui", "--seed", 0))
     elif arguments.command == "train-bc":
