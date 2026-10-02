@@ -41,11 +41,6 @@ python tools/project.py source-check
 python tools/project.py deployed-smoke
 ```
 
-For a promoted learner policy, also run `deployed-gate` and
-`deployed-holdout`. They execute the actor exported to the local C header, not
-the `.pt` checkpoint. The deployed gate must pass the teaching threshold
-(`20/20` target; `19/20` with `nominal=PASS` accepted) before flashing.
-Record the deployed holdout as a robustness score; it does not block deployment.
 Do not commit that learner-specific header to the public teaching repository.
 
 ## 3. Verify firmware deployment
