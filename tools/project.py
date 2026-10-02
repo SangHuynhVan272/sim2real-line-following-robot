@@ -546,6 +546,7 @@ def select_best_checkpoint(checkpoint_dir: Path, output_dir: Path) -> Path:
             "validation_passes": score,
             "validation_total": total,
             "nominal_pass": nominal_pass,
+            "teaching_gate_pass": nominal_pass and score >= TEACHING_GATE_MIN_PASSES,
         }
         results.append(result)
         print(
@@ -556,13 +557,17 @@ def select_best_checkpoint(checkpoint_dir: Path, output_dir: Path) -> Path:
     best = max(
         results,
         key=lambda item: (
+            bool(item["nominal_pass"]) and int(item["validation_passes"]) >= TEACHING_GATE_MIN_PASSES,
             int(item["validation_passes"]),
             bool(item["nominal_pass"]),
             int(item["iteration"]),
         ),
     )
     selection_report = {
-        "selection_rule": "highest validation passes, then nominal PASS, then latest iteration",
+        "selection_rule": (
+            "teaching-gate PASS first, then highest validation passes, "
+            "then nominal PASS, then latest iteration"
+        ),
         "validation_seeds": "0-19",
         "selected_checkpoint": best["checkpoint"],
         "results": results,
@@ -575,9 +580,12 @@ def select_best_checkpoint(checkpoint_dir: Path, output_dir: Path) -> Path:
         str(best["checkpoint"]) + "\n",
         encoding="utf-8",
     )
+    gate_status = "PASS" if best["teaching_gate_pass"] else "NOT PASSED"
     print(
         f"\nSelected checkpoint: {best['checkpoint']} "
-        f"({best['validation_passes']}/{best['validation_total']})"
+        f"({best['validation_passes']}/{best['validation_total']}, "
+        f"nominal={'PASS' if best['nominal_pass'] else 'FAIL'}, "
+        f"teaching gate={gate_status})"
     )
     return Path(str(best["checkpoint"]))
 
