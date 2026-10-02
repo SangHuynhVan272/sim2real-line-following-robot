@@ -13,8 +13,8 @@ The three files travel together:
 Run `python tools/project.py reference-smoke` if you want to confirm that the
 simulator can execute this example before spending time on training. For the
 actual project, follow [`docs/TRAINING.md`](../../docs/TRAINING.md), export your
-own actor to `firmware/generated/`, then run the documented `deployed-smoke`,
-`deployed-gate`, and `deployed-holdout` checks before flashing.
+own actor to `firmware/generated/`, then run
+`python tools/project.py deployed-smoke` before flashing.
 
 Do not copy this header to `firmware/generated/` for a claimed student result.
 Results should identify the checkpoint and policy ID produced by that student's
