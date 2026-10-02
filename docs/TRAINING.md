@@ -57,6 +57,16 @@ The default recipe uses 1,024 environments, seed 0, 512 rollout steps and
 python tools/project.py train-bc --output-dir isaac_sim/output/rl/bc_candidate
 ```
 
+On a 16-31 GB RAM machine, the project is still supported. If host memory is
+tight, reduce the environment count, for example:
+
+```bash
+python tools/project.py train-bc --num-envs 256 --output-dir isaac_sim/output/rl/bc_candidate
+```
+
+Using fewer environments may reduce throughput, but it is preferable to
+treating a 16-31 GB machine as an invalid installation.
+
 This creates:
 
 - `isaac_sim/output/rl/bc_candidate/model_bc.pt`
@@ -71,7 +81,9 @@ post-tanh fit; that previously produced saturated actors.
 python tools/project.py train-ppo --bc-run isaac_sim/output/rl/bc_candidate --output-dir isaac_sim/output/rl/ppo_candidate --iterations 600
 ```
 
-The command uses seed 0 and a BC anchor weight of `0.2`.
+If host RAM is constrained, use the same lower environment count for PPO, for
+example `--num-envs 256`. The command uses seed 0 and a BC anchor weight of
+`0.2`.
 
 For the standard teaching workflow, no manual checkpoint filename is needed.
 The next step automatically uses the newest saved checkpoint, regardless of the
