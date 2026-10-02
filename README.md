@@ -265,13 +265,16 @@ These commands do not clone or reinstall Isaac Sim or Isaac Lab.
 
 Run every remaining command from the `line-following-robot-pai` directory.
 
-Whenever you open a new Terminal, run these three commands first:
+Verify the project environment:
 
 ```bash
-conda activate env_isaaclab
-cd "$HOME/robotics/line-following-robot-pai"
 python tools/project.py doctor
 ```
+
+> [!NOTE]
+> When you open a new Terminal later, return to the `env_isaaclab` environment
+> and the `line-following-robot-pai` project directory before running project
+> commands.
 
 > [!IMPORTANT]
 > Continue only when the final line says **`Environment check PASS. This terminal
