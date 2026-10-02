@@ -77,7 +77,7 @@ The next step automatically uses the newest saved checkpoint, regardless of the
 iteration number.
 
 > [!TIP]
-> **Optional — select the strongest saved validation score**
+> **Optional — search for a stronger saved checkpoint**
 >
 > Run the following only when you want to compare all saved PPO checkpoints:
 >
@@ -85,9 +85,12 @@ iteration number.
 > python tools/project.py select-checkpoint
 > ```
 >
-> The selector evaluates the saved checkpoints on validation seeds 0-19 and
-> records the highest-scoring one. Ties prefer nominal PASS and then the later
-> iteration. This can take substantially longer than evaluating one checkpoint.
+> The selector evaluates every saved `model_*.pt` checkpoint on validation
+> seeds 0-19. It first prefers checkpoints that pass the teaching deployment
+> gate, then prefers the higher validation score, nominal PASS, and the later
+> iteration. If no saved checkpoint passes the gate, the best remaining
+> candidate is still recorded for diagnosis. This can take substantially longer
+> than evaluating one checkpoint.
 
 ## 5. Evaluate the selected checkpoint
 
@@ -149,23 +152,30 @@ selection or tuning.
 `--tune` applies only to the analytical baseline. Never use it to tune an RL
 policy on holdout seeds.
 
-## 6. Export the selected checkpoint
+## 6. Export and verify the selected checkpoint
 
 ```bash
 CHECKPOINT="$(python tools/project.py checkpoint-path)"
 python tools/project.py export-onnx --checkpoint "$CHECKPOINT" --onnx isaac_sim/output/rl/ppo_candidate/policy.onnx
-python tools/project.py export-header --onnx isaac_sim/output/rl/ppo_candidate/policy.onnx --version-name YYYYMMDD_ppo_candidate
+
+POLICY_VERSION="$(date +%Y%m%d_%H%M%S)_ppo_student"
+python tools/project.py export-header --onnx isaac_sim/output/rl/ppo_candidate/policy.onnx --version-name "$POLICY_VERSION"
+
 python tools/project.py source-check
 python tools/project.py deployed-smoke
+python tools/project.py deployed-gate
+python tools/project.py deployed-holdout
 ```
 
 `export-header` creates a versioned export under `firmware/policies/` and
 deploys the same header, manifest and vectors to `firmware/generated/`, which
 is the directory compiled by the sketch. Never edit generated weights by hand.
 
-`deployed-smoke` loads the arrays back from `firmware/generated/`, checks their
-fingerprints and runs nominal plus randomized camera episodes before flashing
-the firmware.
+`deployed-smoke` checks that the generated C policy can be loaded and executed.
+`deployed-gate` then applies the same teaching deployment rule as Section 5.1:
+`20/20` is the target and `19/20` with `nominal=PASS` is accepted. If the
+deployed gate does not pass, do not flash the firmware. `deployed-holdout` is
+recorded as a robustness score and does not block deployment.
 
 The `.pt`, `.onnx`, versioned `firmware/policies/` export and active
 `firmware/generated/` files remain local and are not committed to Git. Record
@@ -176,8 +186,12 @@ the policy ID and evaluation reports with the learner's results.
 Run the failed seed with perception diagnostics:
 
 ```bash
-python isaac_sim/scripts/run_line_following.py --headless --seed 11 --randomize --save-perception-debug --policy-backend rl --checkpoint isaac_sim/output/rl/ppo_candidate/model_<N>.pt
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
+python isaac_sim/scripts/run_line_following.py --headless --seed 11 --randomize --save-perception-debug --policy-backend rl --checkpoint "$CHECKPOINT"
 ```
+
+Replace seed `11` with a failed validation seed when diagnosing a different
+scenario.
 
 Inspect `episode_summary.json`, `observations.csv`, the RGB frame and its
 binary `_mask.png`. Change the classified cause, then repeat parity, smoke,
