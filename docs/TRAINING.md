@@ -101,27 +101,50 @@ echo "Using checkpoint: $CHECKPOINT"
 If `select-checkpoint` was skipped, this resolves the newest saved checkpoint.
 If it was run, this resolves the checkpoint selected on validation seeds 0-19.
 
-Higher completion scores are better; 20/20 is the maximum. Keep seeds 20-39 as
-the holdout instead of using them for checkpoint selection.
+### 5.1 Deployment gate: seeds 0-19
 
-Run validation:
+Run the validation gate:
 
 ```bash
 python tools/project.py gate --checkpoint "$CHECKPOINT"
 ```
 
-Then run the holdout on the same selected checkpoint:
+For the teaching workflow, the gate passes only when the nominal episode passes
+and at least 19 of the 20 randomized validation scenarios pass:
+
+- `20/20` + `nominal=PASS`: target result.
+- `19/20` + `nominal=PASS`: accepted teaching gate PASS.
+- `18/20` or lower, or `nominal=FAIL`: gate not passed.
+
+If the gate does not pass, first compare the saved PPO checkpoints on the same
+validation set:
 
 ```bash
+python tools/project.py select-checkpoint
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
+python tools/project.py gate --checkpoint "$CHECKPOINT"
+```
+
+If the selected checkpoint still does not pass, retrain or continue to
+Section 7 for diagnostics. Do not use holdout seeds to select or tune the
+checkpoint.
+
+### 5.2 Holdout score: seeds 20-39
+
+After the gate passes, run the untouched holdout on the same checkpoint:
+
+```bash
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
 python tools/project.py holdout --checkpoint "$CHECKPOINT"
 ```
 
-> [!NOTE]
-> Example scores: **Validation 19/20; Holdout 20/20.**
+The holdout is a robustness score, not a deployment gate. Record the result even
+when it is below 20/20, and do not repeatedly use seeds 20-39 for checkpoint
+selection or tuning.
 
-This is a valid result. It may continue through ONNX export, C-header export,
-and firmware deployment. A lower score simply means the policy failed in more
-randomized scenarios.
+> [!NOTE]
+> Example: **Gate 19/20 with nominal PASS; Holdout 20/20.** This checkpoint
+> passes the teaching deployment gate and may continue to export.
 
 `--tune` applies only to the analytical baseline. Never use it to tune an RL
 policy on holdout seeds.
