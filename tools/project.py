@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-platform project commands for Windows and Linux."""
+"""Project commands for the validated Linux teaching workflow."""
 
 from __future__ import annotations
 
@@ -76,6 +76,7 @@ def source_check(*, skip_cpp: bool = False) -> None:
         "firmware/reference/line_following_policy_vectors.csv",
         "firmware/generated/README.md",
         "firmware/tests/verify_policy_vectors.cpp",
+        "firmware/tests/classic_perception_smoke.cpp",
         "firmware/tests/verify_reference_policy.py",
         "linefollowingrobot_cad/urdf/linefollowingrobot.urdf",
     )
@@ -315,8 +316,10 @@ def doctor(*, skip_gpu: bool = False) -> None:
     warnings: list[str] = []
 
     system = platform.system()
-    if system not in {"Linux", "Windows"}:
-        failures.append(f"unsupported operating system: {system}")
+    if system != "Linux":
+        failures.append(
+            f"this teaching workflow is validated on Linux x86_64 only, found {system}"
+        )
     else:
         print(f"[PASS] Operating system: {platform.platform()}")
 
@@ -349,54 +352,10 @@ def doctor(*, skip_gpu: bool = False) -> None:
     else:
         print(f"[PASS] Isolated Python environment: {sys.prefix}")
 
-    if system == "Windows":
-        for label, candidate, replacement in (
-            ("repository", str(ROOT), "C:\\robotics\\line-following-robot-pai"),
-            ("Python environment", str(Path(sys.prefix)), "C:\\Miniconda3\\envs\\env_isaaclab"),
-        ):
-            if (
-                " " in candidate
-                or "onedrive" in candidate.lower()
-                or any(ord(character) > 127 for character in candidate)
-            ):
-                failures.append(
-                    f"the Windows {label} path contains spaces, OneDrive or non-ASCII characters; "
-                    f"use {replacement}"
-                )
-            if len(candidate) > 80:
-                failures.append(f"the Windows {label} path is too long; use {replacement}")
-
-        try:
-            import winreg
-
-            with winreg.OpenKey(
-                winreg.HKEY_LOCAL_MACHINE,
-                r"SYSTEM\CurrentControlSet\Control\FileSystem",
-            ) as key:
-                windows_long_paths = int(winreg.QueryValueEx(key, "LongPathsEnabled")[0])
-        except (ImportError, OSError, ValueError):
-            windows_long_paths = 0
-        if windows_long_paths != 1:
-            failures.append("Windows long-path support is disabled; enable it as shown in README section 3.1 and restart")
-        else:
-            print("[PASS] Windows long-path support enabled")
-
     if shutil.which("git") is None:
         failures.append("Git is not on PATH")
     else:
         print(f"[PASS] Git: {shutil.which('git')}")
-        if system == "Windows":
-            long_paths = subprocess.run(
-                ["git", "config", "--global", "--get", "core.longpaths"],
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
-                check=False,
-            ).stdout.strip().lower()
-            if long_paths != "true":
-                failures.append("enable Windows Git long paths: git config --global core.longpaths true")
-            else:
-                print("[PASS] Git long paths enabled")
 
     expected_versions = {
         "isaacsim": ("5.1.0",),
