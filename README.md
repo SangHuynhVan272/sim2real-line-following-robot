@@ -441,26 +441,14 @@ header generated at `firmware/generated/line_following_policy.h`.
 
 ### 10.3 Test the exact generated policy
 
-First run a short verification using the generated C header:
+Run one short verification using the generated C header:
 
 ```bash
 python tools/project.py deployed-smoke
 ```
 
-Then run the same validation gate and holdout sets using the exported policy:
-
-```bash
-python tools/project.py deployed-gate
-python tools/project.py deployed-holdout
-```
-
-`deployed-gate` uses the same teaching gate as Step 9: `20/20` is the target,
-and `19/20` with `nominal=PASS` is accepted. If the deployed gate does not
-pass, do not flash the firmware. `deployed-holdout` is recorded as a robustness
-score and does not block deployment.
-
-These checks verify the exact C policy in `firmware/generated/`, not the
-original `.pt` checkpoint.
+This checks that the exported policy in `firmware/generated/` can be loaded and
+executed before it is compiled into the ESP32-S3 firmware.
 
 ## 11. Upload the policy with Arduino IDE
 
