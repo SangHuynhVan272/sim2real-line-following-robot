@@ -369,8 +369,10 @@ newest saved checkpoint.
 
 ## 9. Evaluate the trained model
 
-The evaluation sets measure how robust the checkpoint is. They are performance
-scores, not deployment gates.
+The two evaluation sets have different roles. **Validation seeds 0-19 are the
+deployment gate.** The checkpoint must pass this gate before it is exported or
+flashed to the real robot. **Holdout seeds 20-39 are recorded as a robustness
+score and do not block deployment.**
 
 First resolve the checkpoint automatically:
 
@@ -392,12 +394,30 @@ python tools/project.py gate --checkpoint "$CHECKPOINT"
 > [!NOTE]
 > Example result: **`Evaluation score: 19/20 randomized scenarios passed; nominal=PASS`**
 
-Higher is better. `20/20` is the best possible score on this 20-scenario set,
-`19/20` is stronger than `18/20`, and so on. A score below `20/20` means
-the policy failed in more test scenarios; it does **not** mean the software
-failed, and it does not prevent export or deployment.
+For this hands-on teaching workflow:
 
-After the checkpoint is selected, run the holdout on seeds 20 through 39:
+- **`20/20` with `nominal=PASS` is the target result** and is the strongest
+  possible result on this validation set.
+- **`19/20` with `nominal=PASS` is also accepted as a gate PASS.** It
+  indicates slightly lower robustness than `20/20`, but it does not block
+  export or deployment.
+- **`18/20` or lower, or `nominal=FAIL`, does not pass the deployment gate.**
+
+If the gate does not pass, first compare the saved PPO checkpoints on the same
+validation set:
+
+```bash
+python tools/project.py select-checkpoint
+CHECKPOINT="$(python tools/project.py checkpoint-path)"
+python tools/project.py gate --checkpoint "$CHECKPOINT"
+```
+
+If the selected checkpoint still does not pass, retrain the model or ask the
+instructor for assistance before export. Do not use the holdout set to select or
+tune a checkpoint.
+
+After the gate passes, run the holdout on seeds 20 through 39 using the same
+selected checkpoint:
 
 ```bash
 CHECKPOINT="$(python tools/project.py checkpoint-path)"
@@ -407,10 +427,10 @@ python tools/project.py holdout --checkpoint "$CHECKPOINT"
 > [!NOTE]
 > Example holdout result: **`Evaluation score: 20/20 randomized scenarios passed; nominal=PASS`**
 
-Record both scores with the checkpoint you selected. You may continue to Step
-10 regardless of whether either score is 20/20. If you want a stronger model,
-you can inspect failed seeds, compare checkpoints on the validation set, or
-retrain before export.
+Record the holdout result as an independent robustness score. A lower holdout
+score means the policy completed fewer unseen randomized scenarios, but it is
+**not a deployment gate** and does not by itself block Step 10. Do not
+repeatedly use seeds 20-39 for checkpoint selection or tuning.
 
 ## 10. Export and verify the ESP32-S3 policy
 
