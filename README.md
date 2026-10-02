@@ -353,20 +353,6 @@ You do not need to know whether the last model is `model_599.pt`,
 `model_699.pt`, or another iteration number. Step 9 automatically uses the
 newest saved checkpoint.
 
-> [!TIP]
-> **Optional — search for a stronger saved checkpoint**
->
-> Skip this box on your first run. If you want to compare the saved PPO
-> checkpoints and use the one with the highest validation score, run:
->
-> ```bash
-> python tools/project.py select-checkpoint
-> ```
->
-> This evaluates every saved `model_*.pt` checkpoint on validation seeds 0-19
-> and records the selected checkpoint. It can take much longer than evaluating
-> one model. After it finishes, continue to Step 9 normally.
-
 ## 9. Evaluate the trained model
 
 The two evaluation sets have different roles. **Validation seeds 0-19 are the
@@ -381,9 +367,9 @@ CHECKPOINT="$(python tools/project.py checkpoint-path)"
 echo "Using checkpoint: $CHECKPOINT"
 ```
 
-If you skipped the optional box in Step 8.2, this uses the newest saved
-checkpoint. If you ran `select-checkpoint`, it uses the checkpoint selected by
-that command.
+By default, this uses the newest saved checkpoint. If you used the optional
+checkpoint-selection procedure in `docs/TRAINING.md`, it uses the checkpoint
+selected on validation seeds 0-19.
 
 Now run the deployment gate on validation seeds 0 through 19:
 
@@ -465,14 +451,26 @@ header generated at `firmware/generated/line_following_policy.h`.
 
 ### 10.3 Test the exact generated policy
 
-Run one short verification using the generated C header:
+First run a short verification using the generated C header:
 
 ```bash
 python tools/project.py deployed-smoke
 ```
 
-This checks that the exported header in `firmware/generated/` can be loaded and
-executed before it is compiled into the ESP32-S3 firmware.
+Then run the same validation gate and holdout sets using the exported policy:
+
+```bash
+python tools/project.py deployed-gate
+python tools/project.py deployed-holdout
+```
+
+`deployed-gate` uses the same teaching gate as Step 9: `20/20` is the target,
+and `19/20` with `nominal=PASS` is accepted. If the deployed gate does not
+pass, do not flash the firmware. `deployed-holdout` is recorded as a robustness
+score and does not block deployment.
+
+These checks verify the exact C policy in `firmware/generated/`, not the
+original `.pt` checkpoint.
 
 ## 11. Upload the policy with Arduino IDE
 
