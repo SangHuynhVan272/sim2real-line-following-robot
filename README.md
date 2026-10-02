@@ -307,16 +307,6 @@ python tools/project.py smoke
 
 Both episodes must print `[PASS] Camera episode`.
 
-To watch the robot in Isaac Sim before training, run:
-
-```bash
-python tools/project.py gui
-```
-
-Select `RobotCamera` to see the image used by the controller, or select
-`TeachingOverviewCamera` to see the complete track. Press `Ctrl + C` in
-Terminal when you want to close the simulation.
-
 ## 8. Train the model
 
 Training has two stages. Behavior Cloning creates a reliable starting point,
