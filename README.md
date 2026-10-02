@@ -567,7 +567,8 @@ Never edit the weights in `line_following_policy.h` by hand.
 | The first Isaac Sim launch takes a long time | Wait for extensions and shaders to finish downloading |
 | `No space left on device` | Check free SSD space and close applications using many file watchers |
 | `PARITY` does not end with `PARITY OK` | Do not train; restore the correct source and configuration first |
-| Validation or holdout score is below 20/20 | This is a model-performance result, not a software failure. Review failed seeds or retrain if you want a stronger model; export and deployment are still allowed |
+| Validation gate is 18/20 or lower, or `nominal=FAIL` | Do not export yet. Follow the Step 9 recovery path: run `select-checkpoint`, rerun the gate, then retrain or diagnose if it still does not pass |
+| Holdout score is below 20/20 | Record the score as a robustness result. The holdout does not block deployment after the validation gate has passed |
 | Arduino cannot find `line_following_policy.h` | Complete Step 10 before verifying the sketch |
 | Arduino cannot find `esp_camera.h` | Install ESP32 by Espressif Systems 3.3.11 and select the ESP32-S3 board |
 | The USB port is not listed | Use a USB data cable, try another port, or correct Ubuntu serial-port permissions |
