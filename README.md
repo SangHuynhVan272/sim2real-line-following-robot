@@ -74,8 +74,15 @@ Your computer needs:
 - Linux x86_64 with GLIBC 2.35 or newer;
 - an NVIDIA RTX GPU with at least 16 GB VRAM;
 - NVIDIA driver 580.65.06 or newer;
-- at least 32 GB RAM and 50 GB of free SSD space;
+- at least 16 GB RAM;
+- 32 GB or more RAM is recommended for larger training workloads;
+- at least 50 GB of free SSD space;
 - a stable Internet connection for the first installation.
+
+The project `doctor` check treats 16 GB as the minimum system-memory class.
+Machines with 16-31 GB RAM are allowed to continue. If host memory becomes
+constrained during BC or PPO training, reduce `--num-envs` rather than treating
+the RAM amount itself as an installation failure.
 
 This guide is validated on Ubuntu 24.04 LTS. Other recent Linux x86_64
 releases, including newer Ubuntu versions, are not blocked by the project and
