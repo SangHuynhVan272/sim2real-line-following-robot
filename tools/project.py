@@ -21,6 +21,9 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 PYTHON = sys.executable
 
+TEACHING_GATE_RANDOMIZED_TOTAL = 20
+TEACHING_GATE_MIN_PASSES = 19
+
 
 def run(command: list[str]) -> None:
     """Run one command from the repository root and preserve its exit status."""
@@ -646,6 +649,53 @@ def checked_camera_episode(
     )
 
 
+def enforce_teaching_gate(output_dir: Path) -> None:
+    """Enforce the beginner-lab deployment gate after a completed evaluation."""
+    output_dir = output_dir if output_dir.is_absolute() else ROOT / output_dir
+    report_path = output_dir / "evaluation_report.json"
+    if not report_path.is_file():
+        raise RuntimeError(f"Gate evaluation did not write {report_path}")
+
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    randomized_passes = int(report.get("randomized_passes", 0))
+    randomized_total = int(report.get("randomized_total", 0))
+    nominal = report.get("nominal", {})
+    nominal_pass = bool(nominal.get("success")) if isinstance(nominal, dict) else False
+
+    if randomized_total != TEACHING_GATE_RANDOMIZED_TOTAL:
+        raise RuntimeError(
+            "Teaching gate expects "
+            f"{TEACHING_GATE_RANDOMIZED_TOTAL} randomized scenarios, "
+            f"but the report contains {randomized_total}."
+        )
+
+    if nominal_pass and randomized_passes >= TEACHING_GATE_MIN_PASSES:
+        if randomized_passes == randomized_total:
+            print(
+                f"[PASS] Deployment gate: {randomized_passes}/{randomized_total}. "
+                "Target result achieved."
+            )
+        else:
+            print(
+                f"[PASS] Deployment gate: {randomized_passes}/{randomized_total} "
+                "accepted for the teaching workflow. "
+                f"Target: {randomized_total}/{randomized_total}."
+            )
+        return
+
+    nominal_status = "PASS" if nominal_pass else "FAIL"
+    print(
+        "[NOT PASSED] Deployment gate requires nominal=PASS and at least "
+        f"{TEACHING_GATE_MIN_PASSES}/{TEACHING_GATE_RANDOMIZED_TOTAL}; "
+        f"got {randomized_passes}/{randomized_total}, nominal={nominal_status}."
+    )
+    print(
+        "Run 'python tools/project.py select-checkpoint', resolve checkpoint-path, "
+        "and run the gate again before export."
+    )
+    raise SystemExit(1)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -692,7 +742,7 @@ def main() -> None:
     ppo_parser.add_argument("--bc-run", type=Path, default=Path("isaac_sim/output/rl/bc_candidate"))
     ppo_parser.add_argument("--output-dir", type=Path, default=Path("isaac_sim/output/rl/ppo_candidate"))
 
-    gate_parser = subparsers.add_parser("gate", help="Evaluate rendered seeds 0-19.")
+    gate_parser = subparsers.add_parser("gate", help="Run the teaching deployment gate on rendered seeds 0-19.")
     gate_parser.add_argument("--checkpoint", type=Path, required=True)
     gate_parser.add_argument("--output-dir", type=Path, default=Path("isaac_sim/output/evaluation_candidate_gate"))
 
@@ -820,6 +870,7 @@ def main() -> None:
             "--checkpoint", arguments.checkpoint, "--seeds", 20, "--save-perception-debug",
             "--output-dir", arguments.output_dir,
         ))
+        enforce_teaching_gate(arguments.output_dir)
     elif arguments.command == "holdout":
         run(script(
             "isaac_sim/scripts/evaluate_line_following.py", "--policy-backend", "rl",
