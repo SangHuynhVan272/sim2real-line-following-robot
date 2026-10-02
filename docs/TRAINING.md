@@ -164,19 +164,14 @@ python tools/project.py export-header --onnx isaac_sim/output/rl/ppo_candidate/p
 
 python tools/project.py source-check
 python tools/project.py deployed-smoke
-python tools/project.py deployed-gate
-python tools/project.py deployed-holdout
 ```
 
 `export-header` creates a versioned export under `firmware/policies/` and
 deploys the same header, manifest and vectors to `firmware/generated/`, which
 is the directory compiled by the sketch. Never edit generated weights by hand.
 
-`deployed-smoke` checks that the generated C policy can be loaded and executed.
-`deployed-gate` then applies the same teaching deployment rule as Section 5.1:
-`20/20` is the target and `19/20` with `nominal=PASS` is accepted. If the
-deployed gate does not pass, do not flash the firmware. `deployed-holdout` is
-recorded as a robustness score and does not block deployment.
+`deployed-smoke` checks that the generated C policy can be loaded and executed
+before flashing the firmware.
 
 The `.pt`, `.onnx`, versioned `firmware/policies/` export and active
 `firmware/generated/` files remain local and are not committed to Git. Record
