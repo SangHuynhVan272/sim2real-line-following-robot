@@ -28,11 +28,10 @@ python tools/project.py smoke
 ```
 
 Changes to perception, plant, timing, ABI or policy require a new BC/PPO run,
-rendered gate 0-19, untouched holdout 20-39, regenerated firmware artifacts,
-`deployed-smoke`, `deployed-gate`, and `deployed-holdout`. The validation
-and deployed gates use the teaching threshold documented in the root README.
-Run `reference-smoke` only when changing the optional reference fixture or its
-loader. Report exact commands, config ranges and results in the pull request.
+rendered gate 0-19, untouched holdout 20-39, regenerated firmware artifacts
+and `deployed-smoke`. Run `reference-smoke` only when changing the optional
+reference fixture or its loader. Report exact commands, config ranges and
+results in the pull request.
 
 Use short imperative commits, for example `vision: retain the last valid
 look-ahead` or `sim: calibrate motor breakaway`.
