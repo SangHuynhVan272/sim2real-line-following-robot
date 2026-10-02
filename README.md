@@ -370,9 +370,9 @@ newest saved checkpoint.
 ## 9. Evaluate the trained model
 
 The two evaluation sets have different roles. **Validation seeds 0-19 are the
-deployment gate.** The checkpoint must pass this gate before it is exported or
-flashed to the real robot. **Holdout seeds 20-39 are recorded as a robustness
-score and do not block deployment.**
+deployment gate.** The checkpoint may continue to export only when this gate
+passes. **Holdout seeds 20-39 are recorded as a robustness score and do not
+block deployment.**
 
 First resolve the checkpoint automatically:
 
@@ -385,14 +385,11 @@ If you skipped the optional box in Step 8.2, this uses the newest saved
 checkpoint. If you ran `select-checkpoint`, it uses the checkpoint selected by
 that command.
 
-Now evaluate it on validation seeds 0 through 19:
+Now run the deployment gate on validation seeds 0 through 19:
 
 ```bash
 python tools/project.py gate --checkpoint "$CHECKPOINT"
 ```
-
-> [!NOTE]
-> Example result: **`Evaluation score: 19/20 randomized scenarios passed; nominal=PASS`**
 
 For this hands-on teaching workflow:
 
@@ -403,18 +400,17 @@ For this hands-on teaching workflow:
   export or deployment.
 - **`18/20` or lower, or `nominal=FAIL`, does not pass the deployment gate.**
 
-If the gate does not pass, first compare the saved PPO checkpoints on the same
-validation set:
+> [!NOTE]
+> A successful teaching gate prints a final **`[PASS] Deployment gate`** line.
+> The target is `20/20`; `19/20` with `nominal=PASS` is the accepted
+> tolerance for this lab workflow.
 
-```bash
-python tools/project.py select-checkpoint
-CHECKPOINT="$(python tools/project.py checkpoint-path)"
-python tools/project.py gate --checkpoint "$CHECKPOINT"
-```
-
-If the selected checkpoint still does not pass, retrain the model or ask the
-instructor for assistance before export. Do not use the holdout set to select or
-tune a checkpoint.
+> [!TIP]
+> **If the gate does not pass:** run `python tools/project.py select-checkpoint`,
+> resolve `CHECKPOINT` again with `checkpoint-path`, and rerun the gate. If
+> it still does not pass, retrain or follow
+> [the training diagnostics](docs/TRAINING.md#7-diagnose-a-lower-scoring-candidate)
+> before export. Do not use the holdout set to select or tune a checkpoint.
 
 After the gate passes, run the holdout on seeds 20 through 39 using the same
 selected checkpoint:
