@@ -20,6 +20,15 @@ firmware-only calibration that the simulator did not evaluate.
 
 ## Validation
 
+Check CLI routing and GUI/evaluation adapters without launching Isaac Sim:
+
+```bash
+python -m unittest discover -s tools -p 'test_*.py'
+```
+
+These regression tests also run in the quality workflow; keep them when
+changing training display or evaluation orchestration.
+
 ```bash
 python tools/project.py doctor
 python tools/project.py source-check

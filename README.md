@@ -319,8 +319,7 @@ Both episodes must print `[PASS] Camera episode`.
 
 ## 8. Train the model
 
-Training has two stages. Behavior Cloning creates a reliable starting point,
-and PPO then improves the policy in randomized environments.
+Train Behavior Cloning (BC) first, then improve the policy with PPO.
 
 ### 8.1 Train the Behavior Cloning warm start
 
@@ -328,10 +327,7 @@ and PPO then improves the policy in randomized environments.
 python tools/project.py train-bc --output-dir isaac_sim/output/rl/bc_candidate
 ```
 
-Do not close Terminal while this command is running. When it finishes,
-`isaac_sim/output/rl/bc_candidate/model_bc.pt` must exist.
-
-Check it with:
+After training finishes, check the saved model:
 
 ```bash
 test -f isaac_sim/output/rl/bc_candidate/model_bc.pt && echo "BC MODEL OK"
@@ -339,87 +335,80 @@ test -f isaac_sim/output/rl/bc_candidate/model_bc.pt && echo "BC MODEL OK"
 
 Continue only when `BC MODEL OK` is printed.
 
-### 8.2 Train PPO
+### 8.2 Train PPO — GUI by default
+
+Run on the Ubuntu desktop to watch the robots learn:
 
 ```bash
 python tools/project.py train-ppo --bc-run isaac_sim/output/rl/bc_candidate --output-dir isaac_sim/output/rl/ppo_candidate --iterations 600
 ```
 
 > [!NOTE]
-> Training is complete when Terminal prints **`training complete; checkpoints in ...`**.
+> If you do not need the GUI, append `--headless` to the command above.
 
-For the normal teaching workflow, **do not hard-code a checkpoint filename**.
-You do not need to know whether the last model is `model_599.pt`,
-`model_699.pt`, or another iteration number. Step 9 automatically uses the
-newest saved checkpoint.
+GUI opens automatically with 1024 environments. Choose `Perspective`,
+`TeachingOverviewCamera` or `RobotCamera` in the Camera menu. Terminal shows
+iterations and rewards. The cameras are display-only; Step 9 evaluates actual
+rendered-camera perception.
+
+Wait for **`training complete; checkpoints in ...`** before closing Terminal
+or the GUI. `600` means PPO iterations, not episodes. If memory is tight, add
+`--num-envs 256`; this changes the training sample budget and may change results.
+This command starts a fresh run, not a resume.
+
+More details: [training recipe and GUI](docs/TRAINING.md#4-train-ppo-from-behavior-cloning).
 
 ## 9. Evaluate the trained model
 
-The two evaluation sets have different roles. **Validation seeds 0-19 are the
-deployment gate.** The checkpoint may continue to export only when this gate
-passes. **Holdout seeds 20-39 are recorded as a robustness score and do not
-block deployment.**
+Keep this Terminal open and use the same `CHECKPOINT` through evaluation and
+export. It resolves the newest saved model, or the current `select-checkpoint`
+result if you previously ran that optional search.
 
-First resolve the checkpoint automatically:
+### 9.1 Validation gate: seeds 0-19
 
 ```bash
 CHECKPOINT="$(python tools/project.py checkpoint-path)"
 echo "Using checkpoint: $CHECKPOINT"
-```
-
-By default, this uses the newest saved checkpoint. If you used the optional
-checkpoint-selection procedure in `docs/TRAINING.md`, it uses the checkpoint
-selected on validation seeds 0-19.
-
-Now run the deployment gate on validation seeds 0 through 19:
-
-```bash
 python tools/project.py gate --checkpoint "$CHECKPOINT"
 ```
 
-For this hands-on teaching workflow:
+Continue only after **`[PASS] Deployment gate`**: nominal must pass and at least
+**19/20** randomized seeds must pass; **20/20** is the target. If it fails, stop
+and follow [the recovery commands](docs/TRAINING.md#51-deployment-gate-seeds-0-19).
 
-- **`20/20` with `nominal=PASS` is the target result** and is the strongest
-  possible result on this validation set.
-- **`19/20` with `nominal=PASS` is also accepted as a gate PASS.** It
-  indicates slightly lower robustness than `20/20`, but it does not block
-  export or deployment.
-- **`18/20` or lower, or `nominal=FAIL`, does not pass the deployment gate.**
+Evaluation is headless and reuses one app per set by default. Terminal shows
+`[START]`, a 15-second `[RUNNING]` heartbeat, and `[DONE n/21]` with results and
+an approximate ETA (one nominal episode + 20 seeds).
 
-> [!NOTE]
-> A successful teaching gate prints a final **`[PASS] Deployment gate`** line.
-> The target is `20/20`; `19/20` with `nominal=PASS` is the accepted
-> tolerance for this lab workflow.
-
-> [!TIP]
-> **If the gate does not pass:** run `python tools/project.py select-checkpoint`,
-> resolve `CHECKPOINT` again with `checkpoint-path`, and rerun the gate. If
-> it still does not pass, retrain or follow
-> [the training diagnostics](docs/TRAINING.md#7-diagnose-a-lower-scoring-candidate)
-> before export. Do not use the holdout set to select or tune a checkpoint.
-
-After the gate passes, run the holdout on seeds 20 through 39 using the same
-selected checkpoint:
+### 9.2 Holdout: seeds 20-39
 
 ```bash
-CHECKPOINT="$(python tools/project.py checkpoint-path)"
 python tools/project.py holdout --checkpoint "$CHECKPOINT"
 ```
 
-> [!NOTE]
-> Example holdout result: **`Evaluation score: 20/20 randomized scenarios passed; nominal=PASS`**
+Record this robustness score; it does not select a different model or block
+export after a teaching gate PASS. Do not use holdout to select or tune models.
+Runtime errors or incomplete evaluations must be resolved before continuing.
 
-Record the holdout result as an independent robustness score. A lower holdout
-score means the policy completed fewer unseen randomized scenarios, but it is
-**not a deployment gate** and does not by itself block Step 10. Do not
-repeatedly use seeds 20-39 for checkpoint selection or tuning.
+### 9.3 Optional: watch the evaluated model
+
+```bash
+python tools/project.py play --checkpoint "$CHECKPOINT"
+```
+
+The GUI opens with `RobotCamera`; select `TeachingOverviewCamera` for the
+overview. This replays the same model without training or changing it.
+After one episode the GUI pauses; close it before Step 10.
+
+Details and diagnostics: [evaluation, logs and execution modes](docs/TRAINING.md#5-evaluate-the-selected-checkpoint).
 
 ## 10. Export and verify the ESP32-S3 policy
 
 ### 10.1 Export the selected checkpoint to ONNX
 
+Use the same `CHECKPOINT` evaluated in Step 9, in the same Terminal:
+
 ```bash
-CHECKPOINT="$(python tools/project.py checkpoint-path)"
 python tools/project.py export-onnx --checkpoint "$CHECKPOINT" --onnx isaac_sim/output/rl/ppo_candidate/policy.onnx
 ```
 

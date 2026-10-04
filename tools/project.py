@@ -68,7 +68,10 @@ def source_check(*, skip_cpp: bool = False) -> None:
         "isaac_sim/scripts/policy_header.py",
         "isaac_sim/scripts/train_policy_bc.py",
         "isaac_sim/scripts/train_policy_rl.py",
+        "isaac_sim/scripts/train_policy_gui.py",
+        "isaac_sim/scripts/play_policy_rendered.py",
         "isaac_sim/scripts/evaluate_line_following.py",
+        "isaac_sim/scripts/evaluate_session_worker.py",
         "isaac_sim/scripts/export_policy.py",
         "isaac_sim/envs/line_following_rl/env_cfg.py",
         "firmware/esp32s3_line_following/esp32s3_line_following.ino",
@@ -476,7 +479,7 @@ def checkpoint_iteration(path: Path) -> int:
     return int(match.group(1)) if match else -1
 
 
-def select_best_checkpoint(checkpoint_dir: Path, output_dir: Path) -> Path:
+def select_best_checkpoint(checkpoint_dir: Path, output_dir: Path, reuse_app: bool = True) -> Path:
     """Evaluate saved PPO checkpoints on validation seeds 0-19 and select the best score."""
     checkpoint_dir = checkpoint_dir if checkpoint_dir.is_absolute() else ROOT / checkpoint_dir
     output_dir = output_dir if output_dir.is_absolute() else ROOT / output_dir
@@ -500,6 +503,7 @@ def select_best_checkpoint(checkpoint_dir: Path, output_dir: Path) -> Path:
             "--policy-backend", "rl",
             "--checkpoint", checkpoint,
             "--seeds", 20,
+            *([] if reuse_app else ["--fresh-process"]),
             "--output-dir", checkpoint_output,
         ))
         report_path = checkpoint_output / "evaluation_report.json"
@@ -674,6 +678,20 @@ def enforce_teaching_gate(output_dir: Path) -> None:
     raise SystemExit(1)
 
 
+def add_evaluation_mode_arguments(parser: argparse.ArgumentParser) -> None:
+    """Default to application reuse, with an explicit fresh-process diagnostic mode."""
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument(
+        "--fresh-process", dest="reuse_app", action="store_false",
+        help="Start a new Isaac Sim process for each episode; the default reuses one app.",
+    )
+    modes.add_argument(
+        "--reuse-app", dest="reuse_app", action="store_true",
+        help="Reuse one app with fresh scenes (already the default; retained for compatibility).",
+    )
+    parser.set_defaults(reuse_app=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -708,24 +726,44 @@ def main() -> None:
     bc_parser.add_argument("--num-envs", type=int, default=1024)
     bc_parser.add_argument("--output-dir", type=Path, default=Path("isaac_sim/output/rl/bc_candidate"))
 
-    ppo_parser = subparsers.add_parser("train-ppo", help="Train PPO from a BC checkpoint.")
+    ppo_parser = subparsers.add_parser("train-ppo", help="Train PPO with GUI by default; add --headless to disable it.")
     ppo_parser.add_argument("--num-envs", type=int, default=1024)
     ppo_parser.add_argument("--iterations", type=int, default=600)
+    display_group = ppo_parser.add_mutually_exclusive_group()
+    display_group.add_argument("--headless", dest="gui", action="store_false", help="Train without the GUI (GUI is enabled by default).")
+    display_group.add_argument("--gui", dest="gui", action="store_true", help="Explicitly enable the default GUI mode; this flag is optional.")
+    ppo_parser.set_defaults(gui=True)
+    ppo_parser.add_argument("--view-env", type=int, default=0, help="Training environment shown by the GUI cameras (default: 0).")
     ppo_parser.add_argument("--bc-run", type=Path, default=Path("isaac_sim/output/rl/bc_candidate"))
     ppo_parser.add_argument("--output-dir", type=Path, default=Path("isaac_sim/output/rl/ppo_candidate"))
+
+    play_parser = subparsers.add_parser(
+        "play", help="Watch the selected PPO checkpoint on the rendered-camera track; GUI is the default."
+    )
+    play_parser.add_argument(
+        "--checkpoint", type=Path, default=None,
+        help="Checkpoint to watch; defaults to the same selection used by checkpoint-path."
+    )
+    play_parser.add_argument("--headless", action="store_true", help="Run the same episode without opening the GUI.")
+    play_parser.add_argument("--seed", type=int, default=0)
+    play_parser.add_argument("--randomize", action="store_true", help="Preview a randomized scenario instead of nominal.")
+    play_parser.add_argument("--output-dir", type=Path, default=Path("isaac_sim/output/play"))
 
     gate_parser = subparsers.add_parser("gate", help="Run the teaching deployment gate on rendered seeds 0-19.")
     gate_parser.add_argument("--checkpoint", type=Path, required=True)
     gate_parser.add_argument("--output-dir", type=Path, default=Path("isaac_sim/output/evaluation_candidate_gate"))
+    add_evaluation_mode_arguments(gate_parser)
 
     holdout_parser = subparsers.add_parser("holdout", help="Evaluate untouched seeds 20-39.")
     holdout_parser.add_argument("--checkpoint", type=Path, required=True)
     holdout_parser.add_argument("--output-dir", type=Path, default=Path("isaac_sim/output/evaluation_candidate_holdout"))
+    add_evaluation_mode_arguments(holdout_parser)
 
     select_parser = subparsers.add_parser(
         "select-checkpoint",
         help="Optionally compare saved PPO checkpoints and prefer one that passes the teaching gate.",
     )
+    add_evaluation_mode_arguments(select_parser)
     select_parser.add_argument(
         "--checkpoint-dir",
         type=Path,
@@ -818,16 +856,31 @@ def main() -> None:
             "--output-dir", arguments.output_dir,
         ))
     elif arguments.command == "train-ppo":
+        if not arguments.gui and arguments.view_env != 0:
+            parser.error("--view-env cannot be used with --headless; GUI is enabled by default")
+        display_arguments = ["--view-env", arguments.view_env] if arguments.gui else ["--headless"]
         run(script(
-            "isaac_sim/scripts/train_policy_rl.py", "--headless", "--num_envs", arguments.num_envs,
+            "isaac_sim/scripts/train_policy_gui.py" if arguments.gui else "isaac_sim/scripts/train_policy_rl.py",
+            *display_arguments, "--num_envs", arguments.num_envs,
             "--max_iterations", arguments.iterations, "--seed", 0,
             "--init-actor", arguments.bc_run / "model_bc.pt", "--bc-anchor-weight", 0.2,
             "--output-dir", arguments.output_dir,
+        ))
+    elif arguments.command == "play":
+        checkpoint = arguments.checkpoint if arguments.checkpoint is not None else resolve_checkpoint()
+        print(f"Playing checkpoint: {checkpoint}", flush=True)
+        run(script(
+            "isaac_sim/scripts/play_policy_rendered.py",
+            "--headless" if arguments.headless else "--gui",
+            "--policy-backend", "rl", "--checkpoint", checkpoint,
+            "--seed", arguments.seed, "--output-dir", arguments.output_dir,
+            *(["--randomize"] if arguments.randomize else []),
         ))
     elif arguments.command == "gate":
         run(script(
             "isaac_sim/scripts/evaluate_line_following.py", "--policy-backend", "rl",
             "--checkpoint", arguments.checkpoint, "--seeds", 20, "--save-perception-debug",
+            *([] if arguments.reuse_app else ["--fresh-process"]),
             "--output-dir", arguments.output_dir,
         ))
         enforce_teaching_gate(arguments.output_dir)
@@ -835,10 +888,11 @@ def main() -> None:
         run(script(
             "isaac_sim/scripts/evaluate_line_following.py", "--policy-backend", "rl",
             "--checkpoint", arguments.checkpoint, "--seed-start", 20, "--seeds", 20,
+            *([] if arguments.reuse_app else ["--fresh-process"]),
             "--save-perception-debug", "--output-dir", arguments.output_dir,
         ))
     elif arguments.command == "select-checkpoint":
-        select_best_checkpoint(arguments.checkpoint_dir, arguments.output_dir)
+        select_best_checkpoint(arguments.checkpoint_dir, arguments.output_dir, arguments.reuse_app)
     elif arguments.command == "checkpoint-path":
         checkpoint = resolve_checkpoint(arguments.checkpoint_dir, arguments.selection_file)
         try:
