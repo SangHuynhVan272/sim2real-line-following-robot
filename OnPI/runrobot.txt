@@ -1,0 +1,7 @@
+cd ~/linefollowing
+source .venv/bin/activate
+
+
+python control2.py --model policy.onnx --port /dev/ttyACM0 --drive
+
+python control2.py --model policy.onnx --port /dev/ttyACM0 --drive

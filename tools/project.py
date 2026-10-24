@@ -95,6 +95,8 @@ def source_check(*, skip_cpp: bool = False) -> None:
         errors.append("missing THIRD_PARTY_NOTICES.md")
 
     forbidden_suffixes = {".pt", ".pth", ".onnx", ".usd", ".usda", ".usdc", ".pem", ".key"}
+    # Supplied Raspberry Pi hardware package includes its deployable model.
+    allowed_artifacts = {Path("OnPI/policy.onnx")}
     allowed_csvs = {
         Path("firmware/reference/line_following_policy_vectors.csv"),
         Path("firmware/generated/line_following_policy_vectors.csv"),
@@ -111,7 +113,7 @@ def source_check(*, skip_cpp: bool = False) -> None:
             or relative.parts[:1] in {("logs",), ("runs",), ("build",), (".pio",), (".venv",)}
         ):
             continue
-        if path.suffix.lower() in forbidden_suffixes:
+        if path.suffix.lower() in forbidden_suffixes and relative not in allowed_artifacts:
             errors.append(f"generated/private artifact must not be committed: {relative}")
         if path.suffix.lower() == ".csv" and relative not in allowed_csvs:
             errors.append(f"unexpected CSV artifact: {relative}")

@@ -1,0 +1,22 @@
+nmcli device wifi list
+
+//connect
+sudo nmcli --ask device wifi connect "Lab-WiFi"
+
+
+//test ping
+ping -c 4 google.com
+
+//get Ip of PI
+hostname -I
+
+
+//từ Ip của PI vào SSH
+
+
+ssh pi4@IP...
+
+192.168.50.253 ip for first floor
+
+
+

@@ -18,6 +18,8 @@ runs/
 *.pt
 *.pth
 *.onnx
+# Supplied Raspberry Pi hardware package; keep its deployable model.
+!/OnPI/policy.onnx
 
 # Generated simulation/debug evidence
 *.usd
